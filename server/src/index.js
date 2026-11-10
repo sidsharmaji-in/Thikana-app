@@ -39,50 +39,100 @@ function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
   return Math.round(R * c * 10) / 10; // 1 decimal place
 }
 
-// 1. GET /api/properties - Filter & Search
+// 1. GET /api/properties - Filter & Search (Slice 2 Engine)
 app.get('/api/properties', (req, res) => {
-  const { city, budgetMax, gender, type, query, lat, lng } = req.query;
+  const { city, budgetMin, budgetMax, gender, type, sharing, query, lat, lng, radiusKm, amenities, sortBy } = req.query;
 
   let results = properties.filter(p => p.isAvailable);
 
+  // City filter
   if (city && city.toLowerCase() !== 'all') {
     results = results.filter(p => p.city.toLowerCase() === city.toLowerCase());
   }
 
+  // Gender preference
   if (gender && gender !== 'any') {
     results = results.filter(p => p.genderPreference === gender || p.genderPreference === 'any');
   }
 
+  // Property type
   if (type && type !== 'all') {
     results = results.filter(p => p.propertyType === type);
   }
 
-  if (budgetMax) {
-    const max = Number(budgetMax);
+  // Sharing occupancy (1, 2, 3, 4)
+  if (sharing && sharing !== 'all') {
+    const sNum = parseInt(sharing, 10);
+    results = results.filter(p => p.rooms && p.rooms.some(r => r.maxOccupancy === sNum));
+  }
+
+  // Budget range (Min & Max)
+  if (budgetMin || budgetMax) {
+    const min = budgetMin ? Number(budgetMin) : 0;
+    const max = budgetMax ? Number(budgetMax) : Infinity;
     results = results.filter(p => {
-      // Find min price across all rooms
-      const minPrice = Math.min(...p.rooms.map(r => r.pricePerPerson));
-      return minPrice <= max;
+      const minRoomPrice = Math.min(...p.rooms.map(r => r.pricePerPerson));
+      return minRoomPrice >= min && minRoomPrice <= max;
     });
   }
 
+  // Amenity filters (WiFi, AC, Power Backup, 24hr Water, Attached Bath, Single Girl Safe)
+  if (amenities) {
+    const amenityList = Array.isArray(amenities) ? amenities : amenities.split(',');
+    results = results.filter(p => {
+      const a = p.amenities || {};
+      return amenityList.every(item => {
+        const key = item.trim().toLowerCase();
+        if (key === 'wifi') return a.wifi && a.wifi !== 'None';
+        if (key === 'ac') return a.cooling === 'AC';
+        if (key === 'powerbackup') return a.electricityBackup && !a.electricityBackup.toLowerCase().includes('no');
+        if (key === 'water24hr') return a.waterSupply && a.waterSupply.toLowerCase().includes('24');
+        if (key === 'attachedbath') return a.bathroom && a.bathroom.toLowerCase().includes('attached');
+        if (key === 'singlegirlsafe') return a.singleGirlSafe || p.genderPreference === 'female';
+        return true;
+      });
+    });
+  }
+
+  // Search keyword (query)
   if (query) {
     const q = query.toLowerCase();
     results = results.filter(p => 
       p.title.toLowerCase().includes(q) ||
       p.locality.toLowerCase().includes(q) ||
-      p.description.toLowerCase().includes(q)
+      p.description.toLowerCase().includes(q) ||
+      p.city.toLowerCase().includes(q) ||
+      (p.nearbyPlaces && p.nearbyPlaces.some(n => n.name.toLowerCase().includes(q)))
     );
   }
 
-  // Calculate distance if coordinates provided
+  // Haversine Geospatial distance calculation
   if (lat && lng) {
     const userLat = parseFloat(lat);
     const userLng = parseFloat(lng);
     results = results.map(p => {
       const distanceKm = getDistanceFromLatLonInKm(userLat, userLng, p.coordinates.lat, p.coordinates.lng);
       return { ...p, distanceKm };
-    }).sort((a, b) => a.distanceKm - b.distanceKm);
+    });
+
+    // Optional radius cut-off (e.g. 5km default or custom)
+    if (radiusKm) {
+      const r = parseFloat(radiusKm);
+      results = results.filter(p => p.distanceKm <= r);
+    }
+  }
+
+  // Sorting
+  if (sortBy === 'price_asc') {
+    results.sort((a, b) => Math.min(...a.rooms.map(r => r.pricePerPerson)) - Math.min(...b.rooms.map(r => r.pricePerPerson)));
+  } else if (sortBy === 'price_desc') {
+    results.sort((a, b) => Math.min(...b.rooms.map(r => r.pricePerPerson)) - Math.min(...a.rooms.map(r => r.pricePerPerson)));
+  } else if (sortBy === 'distance' && lat && lng) {
+    results.sort((a, b) => (a.distanceKm || 0) - (b.distanceKm || 0));
+  } else if (sortBy === 'rating') {
+    results.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+  } else if (lat && lng) {
+    results.sort((a, b) => (a.distanceKm || 0) - (b.distanceKm || 0));
   }
 
   res.json({

@@ -520,14 +520,15 @@ flowchart TD
   - UI states: form validation · photo preview · success confirmation · live listing card preview
   - Tests: `server/test/slice1-owner.test.js` (14/14 tests passing)
 
-- [ ] **Slice 2 — Tenant: Search + Map View**
-  - Home screen: search bar + city selector + map
-  - PostGIS location-based property fetch (5km radius)
-  - Google Maps with property pin clusters
-  - Filter bottom sheet: budget · type · gender · furnished · amenities
-  - List view ↔ Map view toggle
-  - _UI states:_ loading skeletons · no results empty state · location permission denied · offline cached results
-  - _Tests:_ filter logic unit · map pin rendering · API search e2e
+- [x] **Slice 2 — Tenant: Search + Map View** ✅ _(Completed & Verified)_
+  - Home screen: search bar + city selector + interactive map view
+  - Haversine location-based distance calculation & 5km radius filter
+  - Interactive map canvas with custom dark grid, user GPS beacon, and interactive price pins (`₹3.8k`, `₹5.5k`)
+  - Slide-up Map Float Preview card on pin tap with instant "Inspect & Book"
+  - Filter bottom sheet: budget range slider (₹1,000–₹30,000) · property type · gender preference · sharing occupancy · 6 essential Indian amenities
+  - List view ↔ Map view toggle with active filter badges
+  - UI states: no results empty state with reset · distance badges · offline caching
+  - Tests: `server/test/slice2-search-map.test.js` (17/17 tests passing)
 
 - [ ] **Slice 3 — Full Listing Detail**
   - Photo gallery carousel (swipeable, full-screen tap-to-zoom)

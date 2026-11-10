@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server/src/index.js",
     "dev": "node server/src/index.js",
-    "test:slice1": "node server/test/slice1-owner.test.js"
+    "test:slice1": "node server/test/slice1-owner.test.js",
+    "test:slice2": "node server/test/slice2-search-map.test.js"
   },
   "keywords": [
     "rental",

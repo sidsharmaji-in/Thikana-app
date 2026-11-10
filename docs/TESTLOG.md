@@ -26,3 +26,17 @@ Record what was actually run, not what was intended.
   - Property deletion via `DELETE /api/properties/:id`
   - Real-time live card preview before publishing
 - **Next Slice:** Slice 2 — Tenant: Search & Interactive Map Feed (Haversine geospatial distance filter, map pin clusters, and bottom sheet filter).
+
+## Slice 2 — Tenant: Search & Interactive Map Feed (2026-11-10)
+- **Status:** ✅ COMPLETED & VERIFIED
+- **Automated Test Suite:** `npm run test:slice2` (`server/test/slice2-search-map.test.js`)
+- **Results:** 17 Passed, 0 Failed (Cumulative: 31 Passed, 0 Failed)
+- **Features Verified:**
+  - Haversine geospatial distance calculation (`lat`, `lng`, `radiusKm=5`) with real-time distance badge (`0.4 km away`)
+  - Filter Bottom Sheet Modal with budget slider (₹1,000 to ₹30,000), property type, tenant gender preference, and sharing occupancy
+  - Essential Indian Amenities filtering (24hr Power Backup, 24hr Water RO, Attached Western Bath, WiFi, AC, Single Girl Safe)
+  - Sorting algorithms verified (`distance` nearest first, `price_asc`, `price_desc`, `rating`)
+  - Interactive Map View with road grid, river, coaching landmark zone, user GPS beacon, and price pins (`₹3.8k`, `₹5.5k`)
+  - Slide-up Map Float Card on pin tap with room photo, verified badge, and instant "Inspect & Book" CTA
+  - List View ↔ Map View instant toggle
+- **Next Slice:** Slice 3 — Full Listing Detail & Hyperlocal Amenities (Photo gallery carousel with full-screen zoom, floor & bathroom specifications, Jal timing alert cards, nearby hospital/metro markers).

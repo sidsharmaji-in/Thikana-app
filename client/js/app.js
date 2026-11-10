@@ -7,7 +7,15 @@ const GharDekho = (() => {
     activeGender: 'any',
     activeType: 'all',
     searchQuery: '',
-    budgetMax: 20000,
+    budgetMax: 25000,
+    budgetMin: 1000,
+    filterGender: 'any',
+    filterType: 'all',
+    filterSharing: 'all',
+    filterAmenities: new Set(),
+    filterSortBy: 'distance', // 'distance' | 'price_asc' | 'price_desc' | 'rating'
+    userCoords: { lat: 25.1388, lng: 75.8344, label: "Talwandi, Kota" },
+    mapSelectedId: null,
     savedIds: new Set(['prop-kota-01']),
     properties: [],
     inquiries: [],
@@ -80,6 +88,8 @@ const GharDekho = (() => {
     bottomNav: document.getElementById('bottomNav'),
     detailModal: document.getElementById('detailModal'),
     modalContent: document.getElementById('modalContent'),
+    filterModal: document.getElementById('filterModal'),
+    filterContent: document.getElementById('filterModalContent'),
     toast: document.getElementById('toastMsg')
   };
 
@@ -141,6 +151,13 @@ const GharDekho = (() => {
     el.detailModal.addEventListener('click', (e) => {
       if (e.target === el.detailModal) closeDetail();
     });
+
+    // Close filter sheet on backdrop click
+    if (el.filterModal) {
+      el.filterModal.addEventListener('click', (e) => {
+        if (e.target === el.filterModal) closeFilterSheet();
+      });
+    }
   }
 
   // Switch role between Tenant and Owner
@@ -177,35 +194,133 @@ const GharDekho = (() => {
     }
   }
 
-  // Filter properties
-  function getFilteredProperties() {
-    return state.properties.filter(p => {
-      const matchCity = state.activeCity === 'All' || p.city.toLowerCase() === state.activeCity.toLowerCase();
-      const matchGender = state.activeGender === 'any' || p.genderPreference === state.activeGender || p.genderPreference === 'any';
-      const matchType = state.activeType === 'all' || p.propertyType === state.activeType;
-      const minPrice = Math.min(...p.rooms.map(r => r.pricePerPerson));
-      const matchBudget = minPrice <= state.budgetMax;
-      const matchQuery = !state.searchQuery || 
-        p.title.toLowerCase().includes(state.searchQuery) ||
-        p.locality.toLowerCase().includes(state.searchQuery) ||
-        p.city.toLowerCase().includes(state.searchQuery);
-
-      return matchCity && matchGender && matchType && matchBudget && matchQuery;
-    });
+  // Helper: Haversine distance in Kilometers
+  function getDistanceKm(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return Math.round(R * c * 10) / 10;
   }
 
-  // Render Tenant Feed
+  // Filter & Search Engine (Slice 2)
+  function getFilteredProperties() {
+    let list = state.properties.filter(p => p.isAvailable);
+
+    // City
+    if (state.activeCity !== 'All') {
+      list = list.filter(p => p.city.toLowerCase() === state.activeCity.toLowerCase());
+    }
+
+    // Gender
+    if (state.filterGender !== 'any') {
+      list = list.filter(p => p.genderPreference === state.filterGender || p.genderPreference === 'any');
+    }
+
+    // Property Type
+    if (state.filterType !== 'all') {
+      list = list.filter(p => p.propertyType === state.filterType);
+    }
+
+    // Sharing Occupancy (1, 2, 3, 4)
+    if (state.filterSharing !== 'all') {
+      const sNum = parseInt(state.filterSharing, 10);
+      list = list.filter(p => p.rooms && p.rooms.some(r => r.maxOccupancy === sNum));
+    }
+
+    // Budget range
+    list = list.filter(p => {
+      const minPrice = Math.min(...p.rooms.map(r => r.pricePerPerson));
+      return minPrice >= state.budgetMin && minPrice <= state.budgetMax;
+    });
+
+    // Indian Amenities
+    if (state.filterAmenities.size > 0) {
+      list = list.filter(p => {
+        const a = p.amenities || {};
+        for (let amenity of state.filterAmenities) {
+          if (amenity === 'wifi' && (!a.wifi || a.wifi === 'None')) return false;
+          if (amenity === 'ac' && a.cooling !== 'AC') return false;
+          if (amenity === 'powerbackup' && (!a.electricityBackup || a.electricityBackup.toLowerCase().includes('no'))) return false;
+          if (amenity === 'water24hr' && (!a.waterSupply || !a.waterSupply.toLowerCase().includes('24'))) return false;
+          if (amenity === 'attachedbath' && (!a.bathroom || !a.bathroom.toLowerCase().includes('attached'))) return false;
+          if (amenity === 'singlegirlsafe' && !a.singleGirlSafe && p.genderPreference !== 'female') return false;
+        }
+        return true;
+      });
+    }
+
+    // Search Query
+    if (state.searchQuery) {
+      const q = state.searchQuery.toLowerCase();
+      list = list.filter(p => 
+        p.title.toLowerCase().includes(q) ||
+        p.locality.toLowerCase().includes(q) ||
+        p.city.toLowerCase().includes(q) ||
+        p.description.toLowerCase().includes(q) ||
+        (p.nearbyPlaces && p.nearbyPlaces.some(n => n.name.toLowerCase().includes(q)))
+      );
+    }
+
+    // Calculate distance to current user coordinates
+    list = list.map(p => {
+      const dist = p.coordinates 
+        ? getDistanceKm(state.userCoords.lat, state.userCoords.lng, p.coordinates.lat, p.coordinates.lng)
+        : 1.2;
+      return { ...p, distanceKm: dist };
+    });
+
+    // Sort
+    if (state.filterSortBy === 'price_asc') {
+      list.sort((a, b) => Math.min(...a.rooms.map(r => r.pricePerPerson)) - Math.min(...b.rooms.map(r => r.pricePerPerson)));
+    } else if (state.filterSortBy === 'price_desc') {
+      list.sort((a, b) => Math.min(...b.rooms.map(r => r.pricePerPerson)) - Math.min(...a.rooms.map(r => r.pricePerPerson)));
+    } else if (state.filterSortBy === 'rating') {
+      list.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    } else {
+      // Default: distance
+      list.sort((a, b) => (a.distanceKm || 0) - (b.distanceKm || 0));
+    }
+
+    return list;
+  }
+
+  // Render Tenant Feed (Slice 2)
   function renderFeed() {
     const list = getFilteredProperties();
+    const hasActiveFilters = state.filterGender !== 'any' || state.filterType !== 'all' || 
+                             state.filterSharing !== 'all' || state.filterAmenities.size > 0 || 
+                             state.budgetMax < 25000;
     
     let html = `
       <div class="view-mode-bar">
-        <span class="results-count">Showing <b>${list.length}</b> verified rooms</span>
+        <div>
+          <span class="results-count"><b>${list.length}</b> verified rooms found</span>
+          <div style="font-size: 11px; color: var(--color-trust); margin-top: 1px;">
+            📍 Distance from ${state.userCoords.label}
+          </div>
+        </div>
         <div class="view-toggle-btns">
           <button class="view-toggle-btn active" onclick="GharDekho.setTab('khojo')">List</button>
-          <button class="view-toggle-btn" onclick="GharDekho.setTab('map')">Map</button>
+          <button class="view-toggle-btn" onclick="GharDekho.setTab('map')">🗺️ Map</button>
         </div>
       </div>
+
+      ${hasActiveFilters ? `
+        <div style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 8px;">
+          <span class="chip" style="font-size: 11px; background: rgba(255, 107, 0, 0.15); border-color: var(--color-primary);" onclick="GharDekho.openFilterSheet()">
+            ⚙️ Active Filters (${state.filterAmenities.size + (state.filterGender !== 'any' ? 1 : 0) + (state.filterType !== 'all' ? 1 : 0)})
+          </span>
+          <span class="chip" style="font-size: 11px; color: var(--color-danger);" onclick="GharDekho.resetFilters()">
+            ✕ Clear All
+          </span>
+        </div>
+      ` : ''}
+
       <div class="listings-grid">
     `;
 
@@ -213,17 +328,19 @@ const GharDekho = (() => {
       html += `
         <div style="text-align: center; padding: 40px 10px; color: var(--text-secondary);">
           <div style="font-size: 40px; margin-bottom: 10px;">🔍</div>
-          <h3 style="color: var(--text-primary); margin-bottom: 6px;">No rooms found in ${state.activeCity}</h3>
-          <p style="font-size: 13px;">Try adjusting filters or searching a nearby locality</p>
-          <button class="btn-inspect" style="margin-top: 14px;" onclick="GharDekho.resetFilters()">Reset All Filters</button>
+          <h3 style="color: var(--text-primary); margin-bottom: 6px;">No rooms match your filters</h3>
+          <p style="font-size: 13px; max-width: 280px; margin: 0 auto 14px;">
+            Try widening budget range or resetting amenity filters
+          </p>
+          <button class="btn-inspect" style="margin: 0 auto;" onclick="GharDekho.resetFilters()">
+            Reset All Filters
+          </button>
         </div>
       `;
     } else {
       list.forEach(p => {
         const isSaved = state.savedIds.has(p.id);
         const minPrice = Math.min(...p.rooms.map(r => r.pricePerPerson));
-        
-        // Find if this property has shared rooms
         const sharedRoom = p.rooms.find(r => r.maxOccupancy > 1);
 
         html += `
@@ -241,8 +358,13 @@ const GharDekho = (() => {
             </div>
 
             <div class="card-body">
-              <div class="card-locality">
-                📍 ${p.locality}, ${p.city}
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                <div class="card-locality">
+                  📍 ${p.locality}, ${p.city}
+                </div>
+                <span style="font-size: 11px; color: var(--color-trust); font-weight: 600;">
+                  ${p.distanceKm} km away
+                </span>
               </div>
               <h3 class="card-title">${p.title}</h3>
 
@@ -251,7 +373,7 @@ const GharDekho = (() => {
                 <span class="trust-item alert-water">💧 ${p.amenities.waterSupply}</span>
                 <span class="trust-item power-backup">⚡ ${p.amenities.electricityBackup.split(' ')[0]} Backup</span>
                 <span class="trust-item">🚿 ${p.amenities.bathroom.split(' ')[0]} Bath</span>
-                <span class="trust-item">🛏️ ${p.flooring}</span>
+                <span class="trust-item">⭐ ${p.rating} (${p.reviewsCount || 4} reviews)</span>
               </div>
 
               <!-- Live Shared Room Beds Available -->
@@ -292,53 +414,294 @@ const GharDekho = (() => {
     el.contentArea.innerHTML = html;
   }
 
-  // Render Map View
+  // Interactive Map View with Pin Clusters & Float Card (Slice 2)
   function renderMapView() {
     const list = getFilteredProperties();
+    if (!state.mapSelectedId && list.length > 0) {
+      state.mapSelectedId = list[0].id;
+    }
+    const selectedProp = list.find(p => p.id === state.mapSelectedId) || list[0];
+
+    // Calculate simulated 2D pin positions across map canvas (0% to 100%)
+    const pinCoords = [
+      { top: '35%', left: '42%' },
+      { top: '25%', left: '68%' },
+      { top: '65%', left: '30%' },
+      { top: '55%', left: '72%' },
+      { top: '45%', left: '50%' }
+    ];
+
     el.contentArea.innerHTML = `
       <div class="view-mode-bar">
-        <span class="results-count">Showing <b>${list.length}</b> locations on map</span>
-        <div class="view-toggle-btns">
-          <button class="view-toggle-btn" onclick="GharDekho.setTab('khojo')">List</button>
-          <button class="view-toggle-btn active" onclick="GharDekho.setTab('map')">Map</button>
-        </div>
-      </div>
-
-      <div class="map-container">
-        <div class="map-placeholder">
-          <div class="map-pin-pulse"></div>
-          <h4 style="color: var(--text-primary); margin-bottom: 4px;">Interactive Google Maps View</h4>
-          <p style="font-size: 12px; max-width: 280px; margin-bottom: 12px;">
-            Showing pinned verified rooms around ${state.activeCity}. Tap any pin to inspect rooms & nearby landmarks.
-          </p>
-          <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;">
-            ${list.map(p => `
-              <button class="chip" style="font-size: 11px;" onclick="GharDekho.openDetail('${p.id}')">
-                📍 ${p.locality.split(',')[0]} (₹${Math.min(...p.rooms.map(r => r.pricePerPerson))})
-              </button>
-            `).join('')}
+        <div>
+          <span class="results-count"><b>${list.length}</b> locations on interactive map</span>
+          <div style="font-size: 11px; color: var(--color-trust);">
+            📍 Showing rooms around ${state.activeCity}
           </div>
         </div>
+        <div class="view-toggle-btns">
+          <button class="view-toggle-btn" onclick="GharDekho.setTab('khojo')">List</button>
+          <button class="view-toggle-btn active" onclick="GharDekho.setTab('map')">🗺️ Map</button>
+        </div>
       </div>
 
-      <h4 style="font-size: 14px; margin-bottom: 10px; color: var(--text-primary);">Nearest Listings:</h4>
+      <!-- Interactive Map Frame -->
+      <div class="interactive-map-wrapper">
+        <!-- Styled Vector Map Background -->
+        <svg class="map-svg-canvas" viewBox="0 0 400 380" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="mapGlow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#1A2638" />
+              <stop offset="100%" stop-color="#090E17" />
+            </radialGradient>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#mapGlow)" />
+          
+          <!-- Road Grid -->
+          <line x1="0" y1="120" x2="400" y2="120" stroke="#1E293B" stroke-width="3" stroke-dasharray="4,4" />
+          <line x1="0" y1="240" x2="400" y2="240" stroke="#1E293B" stroke-width="4" />
+          <line x1="140" y1="0" x2="140" y2="380" stroke="#1E293B" stroke-width="3" />
+          <line x1="280" y1="0" x2="280" y2="380" stroke="#1E293B" stroke-width="5" />
+          
+          <!-- Metro / Highway Route -->
+          <path d="M 20 360 Q 200 180 380 60" fill="none" stroke="rgba(255, 107, 0, 0.3)" stroke-width="3" />
+          
+          <!-- River / Water canal -->
+          <path d="M 0 40 Q 150 70 400 30" fill="none" stroke="rgba(59, 130, 246, 0.25)" stroke-width="8" />
+
+          <!-- Institute Landmark Zone -->
+          <rect x="180" y="140" width="80" height="50" rx="8" fill="rgba(16, 185, 129, 0.08)" stroke="rgba(16, 185, 129, 0.3)" stroke-width="1" />
+          <text x="220" y="170" fill="rgba(16, 185, 129, 0.7)" font-size="9" text-anchor="middle" font-family="sans-serif">Coaching Hub</text>
+        </svg>
+
+        <!-- User Location Beacon (You Are Here) -->
+        <div class="user-beacon-dot" style="top: 50%; left: 50%;" title="You are here in ${state.userCoords.label}"></div>
+
+        <!-- Interactive Map Pins -->
+        ${list.map((p, idx) => {
+          const coord = pinCoords[idx % pinCoords.length];
+          const minPrice = Math.min(...p.rooms.map(r => r.pricePerPerson));
+          const isSelected = selectedProp && selectedProp.id === p.id;
+          return `
+            <button class="map-pin-btn ${isSelected ? 'selected' : ''}" 
+                    style="top: ${coord.top}; left: ${coord.left};"
+                    onclick="GharDekho.selectMapPin('${p.id}')">
+              <span>🏠</span>
+              <span>₹${(minPrice / 1000).toFixed(1)}k</span>
+            </button>
+          `;
+        }).join('')}
+
+        <!-- Slide-Up Map Float Preview Card -->
+        ${selectedProp ? `
+          <div class="map-float-card" onclick="GharDekho.openDetail('${selectedProp.id}')">
+            <img class="map-float-thumb" src="${selectedProp.photos[0]}" alt="${selectedProp.title}" />
+            <div class="map-float-info">
+              <div class="map-float-title">${selectedProp.title}</div>
+              <div class="map-float-dist">
+                📍 ${selectedProp.distanceKm} km away • ${selectedProp.locality.split(',')[0]}
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+                <span style="font-family: var(--font-mono); font-weight: 700; color: var(--color-primary); font-size: 13px;">
+                  ₹${Math.min(...selectedProp.rooms.map(r => r.pricePerPerson))}/mo
+                </span>
+                <span style="font-size: 11px; color: var(--color-trust); font-weight: 700;">
+                  Inspect & Book →
+                </span>
+              </div>
+            </div>
+          </div>
+        ` : ''}
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <h4 style="font-size: 14px; color: var(--text-primary);">Nearest Rooms to You:</h4>
+        <button class="chip" style="font-size: 10px;" onclick="GharDekho.recenterMap()">
+          🎯 Re-Center My Location
+        </button>
+      </div>
+
       <div class="listings-grid">
-        ${list.slice(0, 2).map(p => `
-          <div class="property-card" onclick="GharDekho.openDetail('${p.id}')" style="margin-bottom: 8px;">
-            <div class="card-body">
-              <div class="card-locality">📍 ${p.locality}</div>
-              <h3 class="card-title" style="font-size: 14px;">${p.title}</h3>
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
-                <span style="font-family: var(--font-mono); font-weight: 700; color: var(--color-primary);">
+        ${list.slice(0, 3).map(p => `
+          <div class="property-card" onclick="GharDekho.openDetail('${p.id}')" style="margin-bottom: 6px;">
+            <div class="card-body" style="padding: 10px 14px;">
+              <div style="display: flex; justify-content: space-between;">
+                <div class="card-locality" style="font-size: 11px;">📍 ${p.locality}</div>
+                <span style="font-size: 11px; color: var(--color-trust);">${p.distanceKm} km</span>
+              </div>
+              <h3 class="card-title" style="font-size: 14px; margin-bottom: 4px;">${p.title}</h3>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-family: var(--font-mono); font-weight: 700; color: var(--color-primary); font-size: 13px;">
                   ₹${Math.min(...p.rooms.map(r => r.pricePerPerson))}/mo
                 </span>
-                <span style="font-size: 12px; color: var(--color-trust);">Tap to view</span>
+                <span style="font-size: 11px; color: var(--color-trust);">View Room →</span>
               </div>
             </div>
           </div>
         `).join('')}
       </div>
     `;
+  }
+
+  function selectMapPin(id) {
+    state.mapSelectedId = id;
+    renderMapView();
+  }
+
+  function recenterMap() {
+    state.userCoords = { lat: 25.1388, lng: 75.8344, label: "Talwandi, Kota" };
+    showToast('🎯 Map centered on coaching hub');
+    renderMapView();
+  }
+
+  // --- SLICE 2: FILTER BOTTOM SHEET MODAL ---
+  function openFilterSheet() {
+    el.filterContent.innerHTML = `
+      <div class="sheet-handle"></div>
+      
+      <div class="filter-sheet-header">
+        <h3 style="font-family: var(--font-display); font-size: 17px; color: var(--text-primary);">
+          ⚙️ Filter & Sort Rooms
+        </h3>
+        <button class="sheet-close-btn" onclick="GharDekho.closeFilterSheet()">✕</button>
+      </div>
+
+      <div class="filter-sheet-body">
+        <!-- Budget Range Slider -->
+        <div>
+          <div class="filter-label">
+            <span>Budget (Maximum Rent)</span>
+            <span style="color: var(--color-primary); font-family: var(--font-mono);">
+              ₹${state.budgetMax.toLocaleString('en-IN')} / month
+            </span>
+          </div>
+          <input type="range" class="range-slider" min="2000" max="30000" step="500" value="${state.budgetMax}" id="budgetSlider" oninput="GharDekho.onBudgetChange(this.value)" />
+          <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); margin-top: 4px;">
+            <span>₹2,000</span>
+            <span>₹15,000</span>
+            <span>₹30,000+</span>
+          </div>
+        </div>
+
+        <!-- Property Type -->
+        <div>
+          <div class="filter-label">Property Type</div>
+          <div class="filter-chips-grid">
+            <span class="filter-chip-option ${state.filterType === 'all' ? 'active' : ''}" onclick="GharDekho.setFilterOption('filterType', 'all')">All</span>
+            <span class="filter-chip-option ${state.filterType === 'pg' ? 'active' : ''}" onclick="GharDekho.setFilterOption('filterType', 'pg')">PG / Hostel</span>
+            <span class="filter-chip-option ${state.filterType === 'room' ? 'active' : ''}" onclick="GharDekho.setFilterOption('filterType', 'room')">Independent Room</span>
+            <span class="filter-chip-option ${state.filterType === 'flat' ? 'active' : ''}" onclick="GharDekho.setFilterOption('filterType', 'flat')">Flat / 1BHK</span>
+            <span class="filter-chip-option ${state.filterType === 'studio' ? 'active' : ''}" onclick="GharDekho.setFilterOption('filterType', 'studio')">Studio</span>
+          </div>
+        </div>
+
+        <!-- Gender Preference -->
+        <div>
+          <div class="filter-label">Tenant Preference</div>
+          <div class="filter-chips-grid">
+            <span class="filter-chip-option ${state.filterGender === 'any' ? 'active' : ''}" onclick="GharDekho.setFilterOption('filterGender', 'any')">All / Any</span>
+            <span class="filter-chip-option ${state.filterGender === 'male' ? 'active' : ''}" onclick="GharDekho.setFilterOption('filterGender', 'male')">Boys Only</span>
+            <span class="filter-chip-option ${state.filterGender === 'female' ? 'active' : ''}" onclick="GharDekho.setFilterOption('filterGender', 'female')">Girls Only</span>
+          </div>
+        </div>
+
+        <!-- Sharing Occupancy -->
+        <div>
+          <div class="filter-label">Room Sharing Model</div>
+          <div class="filter-chips-grid">
+            <span class="filter-chip-option ${state.filterSharing === 'all' ? 'active' : ''}" onclick="GharDekho.setFilterOption('filterSharing', 'all')">Any Sharing</span>
+            <span class="filter-chip-option ${state.filterSharing === '1' ? 'active' : ''}" onclick="GharDekho.setFilterOption('filterSharing', '1')">Single Bed</span>
+            <span class="filter-chip-option ${state.filterSharing === '2' ? 'active' : ''}" onclick="GharDekho.setFilterOption('filterSharing', '2')">Double Sharing</span>
+            <span class="filter-chip-option ${state.filterSharing === '3' ? 'active' : ''}" onclick="GharDekho.setFilterOption('filterSharing', '3')">3-Bed Sharing</span>
+            <span class="filter-chip-option ${state.filterSharing === '4' ? 'active' : ''}" onclick="GharDekho.setFilterOption('filterSharing', '4')">4-Bed Split Room</span>
+          </div>
+        </div>
+
+        <!-- Sort By -->
+        <div>
+          <div class="filter-label">Sort Listings By</div>
+          <div class="filter-chips-grid">
+            <span class="filter-chip-option ${state.filterSortBy === 'distance' ? 'active' : ''}" onclick="GharDekho.setFilterOption('filterSortBy', 'distance')">📍 Nearest First</span>
+            <span class="filter-chip-option ${state.filterSortBy === 'price_asc' ? 'active' : ''}" onclick="GharDekho.setFilterOption('filterSortBy', 'price_asc')">💰 Price: Low to High</span>
+            <span class="filter-chip-option ${state.filterSortBy === 'price_desc' ? 'active' : ''}" onclick="GharDekho.setFilterOption('filterSortBy', 'price_desc')">💎 Price: High to Low</span>
+            <span class="filter-chip-option ${state.filterSortBy === 'rating' ? 'active' : ''}" onclick="GharDekho.setFilterOption('filterSortBy', 'rating')">⭐ Top Rated</span>
+          </div>
+        </div>
+
+        <!-- Essential Indian Amenities -->
+        <div>
+          <div class="filter-label">Essential Indian Amenities</div>
+          <div class="amenities-toggle-grid">
+            <div class="amenity-toggle-chip ${state.filterAmenities.has('powerbackup') ? 'active' : ''}" onclick="GharDekho.toggleFilterAmenity('powerbackup')">
+              <span class="amenity-check">✓</span>
+              <span>⚡ 24hr Power Backup</span>
+            </div>
+            <div class="amenity-toggle-chip ${state.filterAmenities.has('water24hr') ? 'active' : ''}" onclick="GharDekho.toggleFilterAmenity('water24hr')">
+              <span class="amenity-check">✓</span>
+              <span>💧 24hr Water (RO)</span>
+            </div>
+            <div class="amenity-toggle-chip ${state.filterAmenities.has('attachedbath') ? 'active' : ''}" onclick="GharDekho.toggleFilterAmenity('attachedbath')">
+              <span class="amenity-check">✓</span>
+              <span>🚿 Attached Western Bath</span>
+            </div>
+            <div class="amenity-toggle-chip ${state.filterAmenities.has('wifi') ? 'active' : ''}" onclick="GharDekho.toggleFilterAmenity('wifi')">
+              <span class="amenity-check">✓</span>
+              <span>🌐 High-Speed WiFi</span>
+            </div>
+            <div class="amenity-toggle-chip ${state.filterAmenities.has('ac') ? 'active' : ''}" onclick="GharDekho.toggleFilterAmenity('ac')">
+              <span class="amenity-check">✓</span>
+              <span>❄️ Air Conditioner (AC)</span>
+            </div>
+            <div class="amenity-toggle-chip ${state.filterAmenities.has('singlegirlsafe') ? 'active' : ''}" onclick="GharDekho.toggleFilterAmenity('singlegirlsafe')">
+              <span class="amenity-check">✓</span>
+              <span>🛡️ Single Girl Safe</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="filter-sheet-footer">
+        <button class="chip" style="flex: 1; justify-content: center;" onclick="GharDekho.resetFilters()">
+          Reset All
+        </button>
+        <button class="btn-inspect" style="flex: 2; justify-content: center;" onclick="GharDekho.applyFilterSheet()">
+          Show Matching Rooms
+        </button>
+      </div>
+    `;
+
+    el.filterModal.classList.add('active');
+  }
+
+  function closeFilterSheet() {
+    el.filterModal.classList.remove('active');
+  }
+
+  function onBudgetChange(val) {
+    state.budgetMax = Number(val);
+    const label = document.querySelector('.filter-label span[style*="mono"]');
+    if (label) label.textContent = `₹${state.budgetMax.toLocaleString('en-IN')} / month`;
+  }
+
+  function setFilterOption(key, val) {
+    state[key] = val;
+    openFilterSheet();
+  }
+
+  function toggleFilterAmenity(amenity) {
+    if (state.filterAmenities.has(amenity)) {
+      state.filterAmenities.delete(amenity);
+    } else {
+      state.filterAmenities.add(amenity);
+    }
+    openFilterSheet();
+  }
+
+  function applyFilterSheet() {
+    closeFilterSheet();
+    render();
+    const count = getFilteredProperties().length;
+    showToast(`Filters applied: Showing ${count} rooms`);
   }
 
   // Render Detail Bottom Sheet / Modal
@@ -1466,12 +1829,19 @@ const GharDekho = (() => {
 
   function resetFilters() {
     state.activeCity = 'All';
-    state.activeGender = 'any';
-    state.activeType = 'all';
+    state.filterGender = 'any';
+    state.filterType = 'all';
+    state.filterSharing = 'all';
+    state.filterAmenities.clear();
+    state.filterSortBy = 'distance';
+    state.budgetMax = 25000;
+    state.budgetMin = 1000;
     state.searchQuery = '';
     el.searchInput.value = '';
     el.cityPill.textContent = '📍 All Cities';
+    closeFilterSheet();
     render();
+    showToast('Filters reset to default');
   }
 
   function openInquiryModal(propId) {
@@ -1505,6 +1875,14 @@ const GharDekho = (() => {
     setTab,
     setCity,
     resetFilters,
+    openFilterSheet,
+    closeFilterSheet,
+    onBudgetChange,
+    setFilterOption,
+    toggleFilterAmenity,
+    applyFilterSheet,
+    selectMapPin,
+    recenterMap,
     openDetail,
     closeDetail,
     bookBed,
@@ -1524,6 +1902,9 @@ const GharDekho = (() => {
     toggleViewport
   };
 })();
+
+// Alias GharDhundo for backward/interchangeable compatibility
+window.GharDhundo = GharDekho;
 
 // Start app when DOM is ready
 document.addEventListener('DOMContentLoaded', GharDekho.init);

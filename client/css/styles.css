@@ -908,3 +908,254 @@ body {
 .slot-item-row:last-child {
   border-bottom: none;
 }
+
+/* --- Slice 2: Tenant Search & Interactive Map Styles --- */
+.filter-sheet {
+  background-color: var(--bg-surface);
+  border-top-left-radius: var(--radius-xl);
+  border-top-right-radius: var(--radius-xl);
+  border-top: 1px solid var(--border-medium);
+  width: 100%;
+  max-width: 500px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+.filter-sheet-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.filter-sheet-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.filter-sheet-footer {
+  padding: 14px 20px;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-surface-raised);
+  display: flex;
+  gap: 10px;
+}
+
+.filter-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.filter-chips-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.filter-chip-option {
+  background: var(--bg-surface-raised);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
+}
+
+.filter-chip-option:hover {
+  border-color: var(--border-medium);
+  color: var(--text-primary);
+}
+
+.filter-chip-option.active {
+  background: rgba(255, 107, 0, 0.15);
+  border-color: var(--color-primary);
+  color: #FFF;
+}
+
+.range-slider {
+  width: 100%;
+  accent-color: var(--color-primary);
+  height: 6px;
+  background: var(--bg-surface-raised);
+  border-radius: var(--radius-full);
+  outline: none;
+  cursor: pointer;
+}
+
+/* Interactive Map Canvas Styles */
+.interactive-map-wrapper {
+  position: relative;
+  width: 100%;
+  height: 380px;
+  background: #080D16;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  margin-bottom: 16px;
+}
+
+.map-svg-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.map-pin-btn {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  background: var(--bg-surface-raised);
+  border: 1.5px solid var(--color-primary);
+  border-radius: var(--radius-full);
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: #FFF;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.6), 0 0 10px var(--color-primary-subtle);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 10;
+}
+
+.map-pin-btn::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 6px 5px 0 5px;
+  border-style: solid;
+  border-color: var(--color-primary) transparent transparent transparent;
+}
+
+.map-pin-btn:hover, .map-pin-btn.selected {
+  background: var(--color-primary);
+  transform: translate(-50%, -115%) scale(1.15);
+  z-index: 20;
+  box-shadow: 0 6px 16px rgba(255, 107, 0, 0.4);
+}
+
+.user-beacon-dot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 14px;
+  height: 14px;
+  background: #3B82F6;
+  border: 2.5px solid #FFF;
+  border-radius: 50%;
+  box-shadow: 0 0 12px #3B82F6;
+  z-index: 5;
+}
+
+.user-beacon-dot::after {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  right: -8px;
+  bottom: -8px;
+  border-radius: 50%;
+  background: rgba(59, 130, 246, 0.3);
+  animation: ripple 2s infinite;
+}
+
+@keyframes ripple {
+  0% { transform: scale(0.8); opacity: 1; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+
+/* Map Float Preview Card */
+.map-float-card {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  right: 12px;
+  background: rgba(21, 29, 42, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  box-shadow: var(--shadow-lg);
+  z-index: 30;
+  animation: slideUp 0.2s ease-out;
+}
+
+.map-float-thumb {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.map-float-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.map-float-title {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+
+.map-float-dist {
+  font-size: 11px;
+  color: var(--color-trust);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Skeletons */
+.skeleton-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  height: 240px;
+  overflow: hidden;
+  position: relative;
+}
+
+.skeleton-pulse {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, var(--bg-surface) 25%, var(--bg-surface-raised) 50%, var(--bg-surface) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}

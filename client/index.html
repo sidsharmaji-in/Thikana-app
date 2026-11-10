@@ -50,7 +50,7 @@
           <span class="search-icon">🔍</span>
           <input type="text" id="searchInput" placeholder="Search by coaching, metro, locality (e.g. Allen, Hinjawadi)..." />
         </div>
-        <button class="filter-btn-trigger" onclick="GharDhundo.resetFilters()" title="Reset Filters">
+        <button class="filter-btn-trigger" onclick="GharDekho.openFilterSheet()" title="Open Filters">
           ⚙️
         </button>
       </div>
@@ -58,11 +58,11 @@
 
     <!-- Quick Horizontal Filter Chips -->
     <nav class="quick-chips-row" id="quickChips" aria-label="Quick Filters">
-      <button class="chip active" onclick="GharDhundo.setCity('All')">All</button>
-      <button class="chip" onclick="GharDhundo.setCity('Kota')">🎯 Kota (NEET/JEE)</button>
-      <button class="chip" onclick="GharDhundo.setCity('Pune')">💼 Pune (IT Hub)</button>
-      <button class="chip" onclick="GharDhundo.setCity('Jaipur')">🎓 Jaipur (College)</button>
-      <button class="chip" onclick="GharDhundo.setCity('Delhi')">🏛️ Delhi (Metro)</button>
+      <button class="chip active" onclick="GharDekho.setCity('All')">All</button>
+      <button class="chip" onclick="GharDekho.setCity('Kota')">🎯 Kota (NEET/JEE)</button>
+      <button class="chip" onclick="GharDekho.setCity('Pune')">💼 Pune (IT Hub)</button>
+      <button class="chip" onclick="GharDekho.setCity('Jaipur')">🎓 Jaipur (College)</button>
+      <button class="chip" onclick="GharDekho.setCity('Delhi')">🏛️ Delhi (Metro)</button>
     </nav>
 
     <!-- Main Scrollable App Content View -->
@@ -72,23 +72,23 @@
 
     <!-- Bottom Navigation Bar (Thumb Friendly) -->
     <nav class="bottom-nav" id="bottomNav" aria-label="Bottom Navigation">
-      <button class="nav-item active" onclick="GharDhundo.setTab('khojo')">
+      <button class="nav-item active" onclick="GharDekho.setTab('khojo')">
         <span class="nav-icon">🏠</span>
         <span>Khojo</span>
       </button>
-      <button class="nav-item" onclick="GharDhundo.setTab('map')">
+      <button class="nav-item" onclick="GharDekho.setTab('map')">
         <span class="nav-icon">🗺️</span>
         <span>Map</span>
       </button>
-      <button class="nav-item" onclick="GharDhundo.setTab('saved')">
+      <button class="nav-item" onclick="GharDekho.setTab('saved')">
         <span class="nav-icon">❤️</span>
         <span>Saved</span>
       </button>
-      <button class="nav-item" onclick="GharDhundo.setTab('messages')">
+      <button class="nav-item" onclick="GharDekho.setTab('messages')">
         <span class="nav-icon">💬</span>
         <span>Chat</span>
       </button>
-      <button class="nav-item" onclick="GharDhundo.setTab('profile')">
+      <button class="nav-item" onclick="GharDekho.setTab('profile')">
         <span class="nav-icon">👤</span>
         <span>Profile</span>
       </button>
@@ -100,6 +100,13 @@
   <div class="modal-overlay" id="detailModal">
     <div class="detail-sheet" id="modalContent">
       <!-- Injected dynamically on click -->
+    </div>
+  </div>
+
+  <!-- Filter Bottom Sheet Modal (Slice 2) -->
+  <div class="modal-overlay" id="filterModal">
+    <div class="detail-sheet" id="filterModalContent">
+      <!-- Injected dynamically by openFilterSheet() -->
     </div>
   </div>
 
