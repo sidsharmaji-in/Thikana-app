@@ -14,6 +14,10 @@
 
 html, body {
   background-color: var(--bg-canvas);
+  background-image: var(--ambient-mesh);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  background-size: 100% 100vh;
   color: var(--text-primary);
   font-family: var(--font-body);
   font-size: 15px;
@@ -306,7 +310,7 @@ html, body {
   align-items: center;
   justify-content: center;
   border: 2px solid var(--bg-canvas);
-  box-shadow: 0 0 10px rgba(255, 107, 0, 0.7);
+  box-shadow: 0 0 10px var(--color-primary-glow);
   animation: pulseBadge 2s infinite ease-in-out;
 }
 
@@ -366,6 +370,30 @@ html, body {
   background: var(--bg-surface-hover);
   color: var(--text-primary);
   border-color: var(--border-medium);
+}
+
+.theme-toggle-btn {
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.theme-toggle-btn:hover {
+  background: var(--bg-surface-hover);
+  color: var(--text-primary);
+  border-color: var(--color-primary);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 
 /* Quick Category / City Chips Row */
@@ -455,9 +483,9 @@ html, body {
 }
 
 .property-card:hover {
-  border-color: rgba(255, 107, 0, 0.45);
+  border-color: var(--border-accent-glow);
   transform: translateY(-4px);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.65), 0 0 20px rgba(255, 107, 0, 0.12);
+  box-shadow: var(--shadow-md), 0 0 20px var(--color-primary-subtle);
 }
 
 /* Card Media Header */
@@ -1108,7 +1136,7 @@ textarea:focus-visible,
   background: var(--gradient-primary);
   color: #FFFFFF;
   border-bottom-right-radius: 4px;
-  box-shadow: 0 4px 14px rgba(255, 107, 0, 0.25);
+  box-shadow: 0 4px 14px var(--color-primary-glow);
 }
 
 .chat-bubble.owner {
@@ -1265,7 +1293,7 @@ textarea:focus-visible,
 
 .notif-card.unread {
   border-left: 3px solid var(--color-primary);
-  background: rgba(255, 107, 0, 0.04);
+  background: var(--color-primary-subtle);
 }
 
 .notif-icon-box {
@@ -1588,7 +1616,7 @@ input:checked + .slider:before {
   opacity: 1;
   border-color: var(--color-primary);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 107, 0, 0.35);
+  box-shadow: 0 4px 12px var(--color-primary-glow);
 }
 
 .gallery-thumb-item img {
@@ -1786,8 +1814,8 @@ input:checked + .slider:before {
    VISIT SCHEDULER BOX
    ======================================================= */
 .visit-scheduler-box {
-  background: rgba(255, 107, 0, 0.04);
-  border: 1px solid rgba(255, 107, 0, 0.25);
+  background: var(--color-primary-subtle);
+  border: 1px solid var(--border-accent-glow);
   border-radius: var(--radius-lg);
   padding: 16px;
   margin-bottom: 14px;
@@ -1817,7 +1845,7 @@ input:checked + .slider:before {
   border-color: var(--color-primary);
   color: #FFFFFF;
   font-weight: 700;
-  box-shadow: 0 2px 8px rgba(255, 107, 0, 0.35);
+  box-shadow: 0 2px 8px var(--color-primary-glow);
 }
 
 /* =======================================================
@@ -2032,7 +2060,7 @@ input:checked + .slider:before {
   transform: translate(-50%, -50%);
   background: rgba(12, 18, 29, 0.95);
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 107, 0, 0.5);
+  border: 1px solid var(--border-accent-glow);
   color: #FFFFFF;
   padding: 5px 10px;
   border-radius: var(--radius-full);
@@ -2053,7 +2081,7 @@ input:checked + .slider:before {
   background: var(--gradient-primary);
   border-color: #FFA826;
   transform: translate(-50%, -50%) scale(1.15);
-  box-shadow: 0 0 18px rgba(255, 107, 0, 0.65);
+  box-shadow: var(--shadow-glow);
   z-index: 20;
 }
 
@@ -2308,7 +2336,7 @@ input:checked + .slider:before {
 
 .photo-uploader-box:hover {
   border-color: var(--color-primary);
-  background: rgba(255, 107, 0, 0.03);
+  background: var(--color-primary-subtle);
 }
 
 .photo-preview-grid {

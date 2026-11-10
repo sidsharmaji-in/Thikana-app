@@ -198,6 +198,7 @@ const GharDekho = (() => {
 
   // Initialize App
   async function init() {
+    initTheme();
     registerServiceWorker();
     setupNetworkListeners();
     setupEventListeners();
@@ -3554,6 +3555,43 @@ const GharDekho = (() => {
     if (btn) btn.textContent = isWide ? '📱 Mobile Frame' : '💻 Wide Dashboard';
   }
 
+  // --- UI/UX PRO MAX MULTI-PALETTE THEME ENGINE ---
+  const THEMES = ['indigo', 'saffron', 'emerald', 'light'];
+  const THEME_LABELS = {
+    indigo: 'Indigo',
+    saffron: 'Saffron',
+    emerald: 'Emerald',
+    light: 'Studio Light'
+  };
+
+  function cycleTheme() {
+    const current = document.documentElement.getAttribute('data-theme') || 'indigo';
+    const nextIdx = (THEMES.indexOf(current) + 1) % THEMES.length;
+    const nextTheme = THEMES[nextIdx];
+    applyTheme(nextTheme);
+  }
+
+  function applyTheme(theme) {
+    if (!THEMES.includes(theme)) theme = 'indigo';
+    document.documentElement.setAttribute('data-theme', theme);
+    try {
+      localStorage.setItem('ghar_active_theme', theme);
+    } catch (e) {}
+    const labelEl = document.getElementById('themeNameLabel');
+    if (labelEl) labelEl.textContent = THEME_LABELS[theme] || theme;
+    showToast(`🎨 Color Theme: ${THEME_LABELS[theme]}`);
+  }
+
+  function initTheme() {
+    let savedTheme = 'indigo';
+    try {
+      savedTheme = localStorage.getItem('ghar_active_theme') || 'indigo';
+    } catch (e) {}
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    const labelEl = document.getElementById('themeNameLabel');
+    if (labelEl) labelEl.textContent = THEME_LABELS[savedTheme] || savedTheme;
+  }
+
   return {
     init,
     setTab,
@@ -3617,7 +3655,9 @@ const GharDekho = (() => {
     deleteListing,
     submitNewProperty,
     openInquiryModal,
-    toggleViewport
+    toggleViewport,
+    cycleTheme,
+    applyTheme
   };
 })();
 

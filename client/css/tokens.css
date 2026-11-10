@@ -1,68 +1,81 @@
 /* =======================================================
    GharDekho Design System — UI/UX PRO MAX Specification
-   Archetype: Modern Obsidian Slate + Electric Saffron Energy
+   Archetype: Multi-Palette Architectural Studio
+   Default Theme: Midnight Cyber-Indigo Luxe (#6366F1 / #080A11)
    High-contrast, WCAG AA Compliant, Zero-Jank Fluid Scaling
    ======================================================= */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap');
 
-:root {
-  /* Surface Layers (Depth Architecture) */
-  --bg-canvas: #06090E;             /* Layer 0: Obsidian Deep Canvas */
-  --bg-surface: #0C121D;            /* Layer 1: Tinted Slate Container */
-  --bg-surface-elevated: #131B2B;   /* Layer 2: Elevated Card / Module */
-  --bg-surface-hover: #1A2538;      /* Layer 2.5: Interactive Hover State */
-  --bg-surface-active: #202E47;     /* Layer 2.8: Active State */
-  --bg-glass: rgba(12, 18, 29, 0.88); /* Layer 3: Glassmorphism Floating Bar */
-  --bg-glass-card: rgba(19, 27, 43, 0.75);
+/* =======================================================
+   1. DEFAULT THEME: MIDNIGHT CYBER-INDIGO LUXE
+   (Ultra-modern, stylish & professional high-tech aesthetic)
+   ======================================================= */
+:root, [data-theme="indigo"] {
+  /* Surfaces & Canvas */
+  --bg-canvas: #07090E;             /* Layer 0: Pure Deep Void Canvas */
+  --bg-surface: #0E1320;            /* Layer 1: Titanium Slate Container */
+  --bg-surface-elevated: #141C2E;   /* Layer 2: Elevated Card / Module */
+  --bg-surface-hover: #1C2740;      /* Layer 2.5: Interactive Hover State */
+  --bg-surface-active: #233152;     /* Layer 2.8: Active Click State */
+  --bg-glass: rgba(14, 19, 32, 0.88); /* Layer 3: Glassmorphism Bar */
+  --bg-glass-card: rgba(20, 28, 46, 0.78);
 
   /* Hairline Borders & Glass Dividers */
   --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-medium: rgba(255, 255, 255, 0.14);
-  --border-strong: rgba(255, 255, 255, 0.22);
-  --border-focus: #FF6B00;
-  --border-accent-glow: rgba(255, 107, 0, 0.4);
+  --border-medium: rgba(255, 255, 255, 0.15);
+  --border-strong: rgba(255, 255, 255, 0.24);
+  --border-focus: #6366F1;
+  --border-accent-glow: rgba(99, 102, 241, 0.45);
 
-  /* Brand Primary: Electric Saffron (Indian Energy & Warmth) */
-  --color-primary: #FF6B00;
-  --color-primary-light: #FF8526;
-  --color-primary-hover: #E55C00;
-  --color-primary-active: #CC5200;
-  --color-primary-subtle: rgba(255, 107, 0, 0.12);
-  --color-primary-glow: rgba(255, 107, 0, 0.35);
-  --gradient-primary: linear-gradient(135deg, #FF6B00 0%, #FF8A00 50%, #FFA826 100%);
-  --gradient-card-overlay: linear-gradient(180deg, rgba(6, 9, 14, 0) 30%, rgba(6, 9, 14, 0.92) 100%);
+  /* Brand Primary: Electric Indigo -> Ultra Violet -> Cyan */
+  --color-primary: #6366F1;
+  --color-primary-light: #818CF8;
+  --color-primary-hover: #4F46E5;
+  --color-primary-active: #4338CA;
+  --color-primary-subtle: rgba(99, 102, 241, 0.14);
+  --color-primary-glow: rgba(99, 102, 241, 0.4);
+  --gradient-primary: linear-gradient(135deg, #6366F1 0%, #7C3AED 50%, #06B6D4 100%);
+  --gradient-card-overlay: linear-gradient(180deg, rgba(7, 9, 14, 0) 30%, rgba(7, 9, 14, 0.95) 100%);
   --on-primary: #FFFFFF;
 
   /* Trust & Functional Data Accents */
   --color-trust: #10B981;          /* Emerald Green: Verified Resident / Available Bed */
   --color-trust-hover: #059669;
   --color-trust-subtle: rgba(16, 185, 129, 0.14);
-  --color-trust-glow: rgba(16, 185, 129, 0.3);
+  --color-trust-glow: rgba(16, 185, 129, 0.35);
 
-  --color-student: #8B5CF6;        /* Electric Violet: Student Deals / Vibe Score */
-  --color-student-subtle: rgba(139, 92, 246, 0.14);
-  --color-student-glow: rgba(139, 92, 246, 0.3);
+  --color-student: #A855F7;        /* Electric Violet: Student Deals / Vibe Score */
+  --color-student-subtle: rgba(168, 85, 247, 0.14);
+  --color-student-glow: rgba(168, 85, 247, 0.35);
 
   --color-warning: #F59E0B;        /* Amber Gold: Timing alerts / Jal schedules */
   --color-warning-subtle: rgba(245, 158, 11, 0.14);
 
-  --color-danger: #EF4444;         /* Coral Red: Curfews / Occupied / Errors */
-  --color-danger-subtle: rgba(239, 68, 68, 0.14);
+  --color-danger: #F43F5E;         /* Rose Red: Curfews / Occupied / Errors */
+  --color-danger-subtle: rgba(244, 63, 94, 0.14);
 
   /* High-Legibility Typography Colors */
-  --text-primary: #FFFFFF;
-  --text-secondary: #CBD5E1;
-  --text-muted: #8492A6;
-  --text-dim: #526075;
-  --text-inverse: #06090E;
+  --text-primary: #F8FAFC;
+  --text-secondary: #94A3B8;
+  --text-muted: #64748B;
+  --text-dim: #475569;
+  --text-inverse: #07090E;
+
+  /* Atmospheric Ambient & Shadows */
+  --ambient-mesh: radial-gradient(circle at 50% -10%, rgba(99, 102, 241, 0.22) 0%, rgba(6, 182, 212, 0.08) 35%, transparent 70%);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.45);
+  --shadow-md: 0 10px 28px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.75);
+  --shadow-glow: 0 0 24px rgba(99, 102, 241, 0.45);
+  --shadow-glow-trust: 0 0 20px rgba(16, 185, 129, 0.35);
 
   /* Typography Scales */
   --font-display: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
-  /* Standard 4px / 8px Spacing Grid */
+  /* Spacing & Radii */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -73,7 +86,6 @@
   --space-10: 40px;
   --space-12: 48px;
 
-  /* Border Radii */
   --radius-xs: 4px;
   --radius-sm: 8px;
   --radius-md: 12px;
@@ -82,15 +94,101 @@
   --radius-2xl: 32px;
   --radius-full: 9999px;
 
-  /* Atmospheric Shadows */
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.55);
-  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.7);
-  --shadow-glow: 0 0 24px rgba(255, 107, 0, 0.35);
-  --shadow-glow-trust: 0 0 20px rgba(16, 185, 129, 0.3);
-
   /* Responsive Max-Width Containers */
   --container-max: 1360px;
   --header-height: 72px;
   --bottom-bar-height: 68px;
+}
+
+/* =======================================================
+   2. THEME: SUNSET SAFFRON ENERGY (Warm Indian Heritage)
+   ======================================================= */
+[data-theme="saffron"] {
+  --bg-canvas: #06090E;
+  --bg-surface: #0C121D;
+  --bg-surface-elevated: #131B2B;
+  --bg-surface-hover: #1A2538;
+  --bg-surface-active: #202E47;
+  --bg-glass: rgba(12, 18, 29, 0.88);
+  --bg-glass-card: rgba(19, 27, 43, 0.78);
+
+  --border-focus: #FF6B00;
+  --border-accent-glow: rgba(255, 107, 0, 0.45);
+
+  --color-primary: #FF6B00;
+  --color-primary-light: #FF8526;
+  --color-primary-hover: #E55C00;
+  --color-primary-active: #CC5200;
+  --color-primary-subtle: rgba(255, 107, 0, 0.14);
+  --color-primary-glow: rgba(255, 107, 0, 0.4);
+  --gradient-primary: linear-gradient(135deg, #FF6B00 0%, #FF8A00 50%, #FFA826 100%);
+  --shadow-glow: 0 0 24px rgba(255, 107, 0, 0.45);
+  --ambient-mesh: radial-gradient(circle at 50% -10%, rgba(255, 107, 0, 0.18) 0%, rgba(245, 158, 11, 0.08) 35%, transparent 70%);
+}
+
+/* =======================================================
+   3. THEME: NORDIC JADE OASIS (Architectural Emerald)
+   ======================================================= */
+[data-theme="emerald"] {
+  --bg-canvas: #050B08;
+  --bg-surface: #0B1510;
+  --bg-surface-elevated: #112019;
+  --bg-surface-hover: #172C22;
+  --bg-surface-active: #1D382B;
+  --bg-glass: rgba(11, 21, 16, 0.88);
+  --bg-glass-card: rgba(17, 32, 25, 0.78);
+
+  --border-focus: #10B981;
+  --border-accent-glow: rgba(16, 185, 129, 0.45);
+
+  --color-primary: #10B981;
+  --color-primary-light: #34D399;
+  --color-primary-hover: #059669;
+  --color-primary-active: #047857;
+  --color-primary-subtle: rgba(16, 185, 129, 0.14);
+  --color-primary-glow: rgba(16, 185, 129, 0.4);
+  --gradient-primary: linear-gradient(135deg, #10B981 0%, #059669 50%, #06B6D4 100%);
+  --shadow-glow: 0 0 24px rgba(16, 185, 129, 0.45);
+  --ambient-mesh: radial-gradient(circle at 50% -10%, rgba(16, 185, 129, 0.2) 0%, rgba(6, 182, 212, 0.08) 35%, transparent 70%);
+}
+
+/* =======================================================
+   4. THEME: STUDIO PORCELAIN CLEAN (Daylight Modern Luxury)
+   ======================================================= */
+[data-theme="light"] {
+  --bg-canvas: #F8FAFC;
+  --bg-surface: #FFFFFF;
+  --bg-surface-elevated: #F1F5F9;
+  --bg-surface-hover: #E2E8F0;
+  --bg-surface-active: #CBD5E1;
+  --bg-glass: rgba(255, 255, 255, 0.92);
+  --bg-glass-card: rgba(255, 255, 255, 0.95);
+
+  --border-subtle: rgba(15, 23, 42, 0.08);
+  --border-medium: rgba(15, 23, 42, 0.14);
+  --border-strong: rgba(15, 23, 42, 0.22);
+  --border-focus: #4F46E5;
+  --border-accent-glow: rgba(79, 70, 229, 0.35);
+
+  --color-primary: #4F46E5;
+  --color-primary-light: #6366F1;
+  --color-primary-hover: #4338CA;
+  --color-primary-active: #3730A3;
+  --color-primary-subtle: rgba(79, 70, 229, 0.1);
+  --color-primary-glow: rgba(79, 70, 229, 0.25);
+  --gradient-primary: linear-gradient(135deg, #4F46E5 0%, #6366F1 50%, #0284C7 100%);
+  --gradient-card-overlay: linear-gradient(180deg, rgba(255, 255, 255, 0) 30%, rgba(255, 255, 255, 0.95) 100%);
+  --on-primary: #FFFFFF;
+
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-muted: #64748B;
+  --text-dim: #94A3B8;
+  --text-inverse: #F8FAFC;
+
+  --ambient-mesh: radial-gradient(circle at 50% -10%, rgba(79, 70, 229, 0.08) 0%, rgba(2, 132, 199, 0.04) 35%, transparent 70%);
+  --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 10px 24px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 20px 40px rgba(15, 23, 42, 0.12);
+  --shadow-glow: 0 0 20px rgba(79, 70, 229, 0.25);
 }
