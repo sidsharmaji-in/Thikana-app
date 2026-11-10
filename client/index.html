@@ -3,88 +3,122 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="theme-color" content="#0B0F17" />
+  <meta name="theme-color" content="#06090E" />
   <title>GharDekho 🏠 | India's Trusted Student & Professional Rental Marketplace</title>
   <link rel="stylesheet" href="css/tokens.css" />
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
 
-  <!-- Mobile Device Simulator Frame -->
-  <main class="device-shell" id="deviceShell">
-    
-    <!-- Accessibility Live Region for Screen Readers / TalkBack -->
-    <div id="a11yAnnouncer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+  <!-- Screen Reader Live Region for TalkBack / VoiceOver (Slice 8) -->
+  <div id="a11yAnnouncer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 
+  <!-- Main Responsive Application Container -->
+  <main class="device-shell mode-wide" id="deviceShell">
+    
     <!-- Offline Stale Data Warning Banner (Slice 8) -->
     <div class="offline-banner" id="offlineBanner" role="status" style="display: none;">
       <span class="offline-dot"></span>
-      <span>⚠️ Offline Mode · Showing cached rooms & shortlist</span>
+      <span>⚠️ Offline Mode · Loaded from device storage (Showing cached listings)</span>
     </div>
 
-    <!-- App Header Sticky -->
+    <!-- Top Navigation Header (Desktop & Mobile Unified) -->
     <header class="app-header" role="banner">
-      <div class="header-top">
-        <div class="brand-container">
+      <div class="header-inner">
+        
+        <!-- Brand Identity -->
+        <div class="brand-container" onclick="GharDekho.setTab('khojo')" role="button" tabindex="0" aria-label="GharDekho Home">
           <div class="brand-logo" aria-hidden="true">🏠</div>
-          <div class="brand-name">Ghar<span>Dekho</span></div>
+          <div class="brand-text">
+            <div class="brand-name">Ghar<span>Dekho</span></div>
+            <div class="brand-tagline">Zero-Brokerage Student Housing</div>
+          </div>
         </div>
 
-        <div style="display: flex; align-items: center; gap: 6px;">
+        <!-- Central Search & Location Bar -->
+        <div class="search-command-bar" role="search">
+          <!-- City Quick Pill -->
+          <button class="location-pill" id="cityPill" onclick="GharDhundo.resetFilters()" title="Change city" aria-label="Selected city: All cities. Click to filter.">
+            <span class="pill-icon">📍</span>
+            <span class="pill-text">All Cities</span>
+          </button>
+          
+          <div class="search-divider"></div>
+
+          <!-- Keyword Input -->
+          <div class="search-input-box">
+            <span class="search-icon" aria-hidden="true">🔍</span>
+            <input 
+              type="text" 
+              id="searchInput" 
+              placeholder="Search by coaching (Allen, Resonance), metro, locality..." 
+              aria-label="Search rental properties by coaching, metro, or locality" 
+              autocomplete="off"
+            />
+          </div>
+
+          <!-- Filter Sheet Button -->
+          <button class="filter-btn-trigger" onclick="GharDekho.openFilterSheet()" title="Open Filters" aria-label="Open Filter Options Sheet">
+            <span class="filter-icon">⚙️</span>
+            <span class="filter-btn-label">Filters</span>
+          </button>
+        </div>
+
+        <!-- Top Right Actions & Controls -->
+        <div class="header-actions">
+          
           <!-- Notification Bell with Unread Badge -->
           <button class="notif-bell-btn" id="notifBellBtn" onclick="GharDekho.toggleNotificationDrawer()" title="View Notifications" aria-label="Notifications & Alerts">
             <span class="bell-icon" aria-hidden="true">🔔</span>
             <span class="notif-badge" id="notifBadge" style="display: none;" aria-label="Unread notifications count">0</span>
           </button>
-          <!-- Role Switcher -->
-          <div class="role-toggle-group" role="group" aria-label="User Profile Role">
-            <button class="role-btn active" id="roleTenantBtn" aria-pressed="true">Kirayedaar</button>
-            <button class="role-btn" id="roleOwnerBtn" aria-pressed="false">Owner</button>
-          </div>
-          <!-- Viewport Mode Toggle -->
-          <button class="viewport-btn" id="viewportBtn" onclick="GharDhundo.toggleViewport()" title="Toggle Mobile / Wide View" aria-label="Toggle Wide Viewport Simulator">
-            💻 Wide
+
+          <!-- Saved Shortlist Quick Shortcut (Desktop) -->
+          <button class="header-icon-btn desktop-only" onclick="GharDekho.setTab('saved')" title="Shortlisted Rooms" aria-label="Saved Rooms">
+            <span class="header-btn-icon">❤️</span>
           </button>
+
+          <!-- In-App Chat Quick Shortcut (Desktop) -->
+          <button class="header-icon-btn desktop-only" onclick="GharDekho.setTab('messages')" title="Messages & Visits" aria-label="In-App Messages">
+            <span class="header-btn-icon">💬</span>
+          </button>
+
+          <!-- Role Switcher Segmented Control -->
+          <div class="role-toggle-group" role="group" aria-label="User Profile Role">
+            <button class="role-btn active" id="roleTenantBtn" aria-pressed="true">
+              <span class="role-emoji">🎓</span> Kirayedaar
+            </button>
+            <button class="role-btn" id="roleOwnerBtn" aria-pressed="false">
+              <span class="role-emoji">🔑</span> Owner
+            </button>
+          </div>
+
+          <!-- Viewport Simulator Toggle (Mobile vs Full Screen) -->
+          <button class="viewport-btn" id="viewportBtn" onclick="GharDhundo.toggleViewport()" title="Toggle Viewport Layout" aria-label="Toggle Wide Viewport Simulator">
+            📱 Mobile
+          </button>
+
         </div>
+
       </div>
 
-      <!-- Location Indicator & City Quick Select -->
-      <div class="location-row" role="region" aria-label="Current city selection">
-        <div class="location-pill" id="cityPill" onclick="GharDhundo.resetFilters()" tabindex="0" role="button" aria-label="Selected city: All cities. Click to reset.">
-          📍 All Cities
-        </div>
-        <div style="font-size: 11px; color: var(--text-muted);" aria-hidden="true">
-          Kota • Pune • Jaipur • Delhi
-        </div>
-      </div>
+      <!-- Quick Category & City Navigation Bar -->
+      <nav class="quick-chips-row" id="quickChips" aria-label="Quick Hub Filters">
+        <button class="chip active" onclick="GharDekho.setCity('All')">All Hubs</button>
+        <button class="chip" onclick="GharDekho.setCity('Kota')">🎯 Kota (NEET/JEE Hub)</button>
+        <button class="chip" onclick="GharDekho.setCity('Pune')">💼 Pune (IT & Colleges)</button>
+        <button class="chip" onclick="GharDekho.setCity('Jaipur')">🎓 Jaipur (MNIT & Uni)</button>
+        <button class="chip" onclick="GharDekho.setCity('Delhi')">🏛️ Delhi (Metro & UPSC)</button>
+      </nav>
 
-      <!-- Search Input Bar -->
-      <div class="search-bar-wrap" role="search">
-        <div class="search-input-box">
-          <span class="search-icon" aria-hidden="true">🔍</span>
-          <input type="text" id="searchInput" placeholder="Search by coaching, metro, locality (e.g. Allen, Hinjawadi)..." aria-label="Search rental properties by coaching, metro, or locality" />
-        </div>
-        <button class="filter-btn-trigger" onclick="GharDekho.openFilterSheet()" title="Open Filters" aria-label="Open Filter Options Sheet">
-          ⚙️
-        </button>
-      </div>
     </header>
 
-    <!-- Quick Horizontal Filter Chips -->
-    <nav class="quick-chips-row" id="quickChips" aria-label="Quick Filters">
-      <button class="chip active" onclick="GharDekho.setCity('All')">All</button>
-      <button class="chip" onclick="GharDekho.setCity('Kota')">🎯 Kota (NEET/JEE)</button>
-      <button class="chip" onclick="GharDekho.setCity('Pune')">💼 Pune (IT Hub)</button>
-      <button class="chip" onclick="GharDekho.setCity('Jaipur')">🎓 Jaipur (College)</button>
-      <button class="chip" onclick="GharDekho.setCity('Delhi')">🏛️ Delhi (Metro)</button>
-    </nav>
-
-    <!-- Main Scrollable App Content View -->
-    <section class="app-content" id="appContent">
+    <!-- Main Dynamic Application Content Container -->
+    <section class="app-content" id="appContent" role="region" aria-label="Main Rental Content View">
       <!-- Injected dynamically by app.js -->
     </section>
 
-    <!-- Bottom Navigation Bar (Thumb Friendly) -->
+    <!-- Bottom Navigation Bar (Thumb Friendly for Mobile) -->
     <nav class="bottom-nav" id="bottomNav" aria-label="Bottom Navigation">
       <button class="nav-item active" onclick="GharDekho.setTab('khojo')">
         <span class="nav-icon">🏠</span>
@@ -131,17 +165,16 @@
     </div>
   </div>
 
-  <!-- Notification Center Bottom Sheet Modal (Slice 7) -->
+  <!-- Notification Center Drawer Modal (Slice 7) -->
   <div class="modal-overlay" id="notifModal" role="dialog" aria-modal="true" aria-label="Notification Center">
     <div class="detail-sheet notif-sheet" id="notifModalContent">
       <!-- Injected dynamically by GharDekho.renderNotifications() -->
     </div>
   </div>
 
-  <!-- Toast Notification Message -->
-  <div class="toast-msg" id="toastMsg"></div>
+  <!-- Floating Toast Message Notification -->
+  <div class="toast-msg" id="toastMsg" role="alert" aria-live="assertive"></div>
 
   <script src="js/app.js"></script>
 </body>
 </html>
-

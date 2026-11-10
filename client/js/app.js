@@ -477,69 +477,97 @@ const GharDekho = (() => {
       list.forEach(p => {
         const isSaved = state.savedIds.has(p.id);
         const minPrice = Math.min(...p.rooms.map(r => r.pricePerPerson));
-        const sharedRoom = p.rooms.find(r => r.maxOccupancy > 1);
+        const sharedRoom = p.rooms.find(r => r.maxOccupancy > 1) || p.rooms[0];
+        const vacantBeds = p.rooms.reduce((acc, r) => acc + (r.maxOccupancy - r.currentOccupancy), 0);
+
+        let vacancyClass = 'trust';
+        let vacancyText = `${vacantBeds} Beds Vacant`;
+        if (vacantBeds === 0) {
+          vacancyClass = 'danger';
+          vacancyText = 'Fully Occupied (Waitlist)';
+        } else if (vacantBeds <= 2) {
+          vacancyClass = 'warning';
+          vacancyText = `Only ${vacantBeds} ${vacantBeds === 1 ? 'Bed' : 'Beds'} Left!`;
+        }
 
         html += `
           <div class="property-card" onclick="GharDekho.openDetail('${p.id}')">
             <div class="card-media">
-              <img src="${p.photos[0]}" alt="${p.title}" loading="lazy" />
-              <div class="card-badges-top">
-                <span class="badge-tag ${p.isVerified ? 'verified' : ''}">
-                  ${p.isVerified ? '🛡️ ' + p.verificationBadge : p.propertyType.toUpperCase()}
-                </span>
-                <button class="heart-btn ${isSaved ? 'saved' : ''}" onclick="event.stopPropagation(); GharDekho.toggleSave('${p.id}')">
-                  ${isSaved ? '❤️' : '🤍'}
-                </button>
+              <img class="card-img" src="${p.photos[0]}" alt="${p.title}" loading="lazy" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=800&q=80';" />
+              
+              <!-- Rating Micro-Badge -->
+              <div class="card-badge-top-left">
+                ⭐ ${p.rating} <span style="color: var(--text-muted); font-weight: 500;">(${p.reviewsCount || 4})</span>
+              </div>
+
+              <!-- Heart Bookmark -->
+              <button class="heart-btn ${isSaved ? 'saved' : ''}" onclick="event.stopPropagation(); GharDekho.toggleSave('${p.id}')" title="Save to shortlist" aria-label="Bookmark Room">
+                ${isSaved ? '❤️' : '🤍'}
+              </button>
+
+              <!-- Live Vacancy Pill -->
+              <div class="card-vacancy-pill ${vacancyClass}">
+                <span class="pulse-dot"></span>
+                <span>${vacancyText}</span>
+              </div>
+
+              <!-- Gender Preference Tag -->
+              <div class="card-gender-pill">
+                ${p.genderPreference === 'female' ? '🌸 Girls PG' : p.genderPreference === 'male' ? '🎯 Boys PG' : '🤝 Co-ed PG'}
               </div>
             </div>
 
             <div class="card-body">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+              <div class="card-locality-row">
                 <div class="card-locality">
                   📍 ${p.locality}, ${p.city}
                 </div>
-                <span style="font-size: 11px; color: var(--color-trust); font-weight: 600;">
-                  ${p.distanceKm} km away
-                </span>
+                <div class="card-distance">
+                  ${p.distanceKm || 0.4} km away
+                </div>
               </div>
+
               <h3 class="card-title">${p.title}</h3>
 
-              <!-- Indian Specific Highlights -->
-              <div class="trust-strip">
-                <span class="trust-item alert-water">💧 ${p.amenities.waterSupply}</span>
-                <span class="trust-item power-backup">⚡ ${p.amenities.electricityBackup.split(' ')[0]} Backup</span>
-                <span class="trust-item">🚿 ${p.amenities.bathroom.split(' ')[0]} Bath</span>
-                <span class="trust-item">⭐ ${p.rating} (${p.reviewsCount || 4} reviews)</span>
+              <!-- Hyperlocal Checklist Chips -->
+              <div class="card-amenities-row">
+                <div class="card-amenity-item" title="Water Supply">
+                  <span>💧</span> <span>${p.amenities.waterSupply.split('(')[0].trim()}</span>
+                </div>
+                <div class="card-amenity-item" title="Electricity Backup">
+                  <span>⚡</span> <span>${p.amenities.electricityBackup.split(' ')[0]} Backup</span>
+                </div>
+                <div class="card-amenity-item" title="Bathroom">
+                  <span>🚿</span> <span>${p.amenities.bathroom.split(' ')[0]} Bath</span>
+                </div>
+                <div class="card-amenity-item" title="Owner Verification">
+                  <span>🛡️</span> <span>${p.owner?.isKycDone ? 'Aadhaar Verified' : 'Direct Owner'}</span>
+                </div>
               </div>
 
-              <!-- Live Shared Room Beds Available -->
+              <!-- Shared Room Live Beds Indicator -->
               ${sharedRoom ? `
-                <div class="sharing-slot-bar">
-                  <div class="sharing-slot-info">
-                    <span style="font-size: 11px; font-weight: 700; color: var(--color-student);">
-                      ${sharedRoom.label.split('(')[0]}
-                    </span>
-                    <span style="font-size: 11px; color: var(--text-muted);">
-                      (${sharedRoom.maxOccupancy - sharedRoom.currentOccupancy} of ${sharedRoom.maxOccupancy} Beds Available)
-                    </span>
-                  </div>
-                  <div class="bed-icons-row">
-                    ${sharedRoom.slots.map(s => `
-                      <span class="bed-icon ${s.status === 'occupied' ? 'occupied' : ''}" title="${s.status === 'occupied' ? 'Occupied' : 'Vacant Bed'}">
-                        🛏️
-                      </span>
-                    `).join('')}
-                  </div>
+                <div style="background: rgba(139, 92, 246, 0.08); border: 1px solid rgba(139, 92, 246, 0.2); border-radius: var(--radius-md); padding: 7px 10px; display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 11px; font-weight: 700; color: var(--color-student);">
+                    🛏️ ${sharedRoom.label.split('(')[0].trim()}
+                  </span>
+                  <span style="font-size: 11px; font-weight: 700; color: var(--color-trust);">
+                    ${sharedRoom.maxOccupancy - sharedRoom.currentOccupancy} of ${sharedRoom.maxOccupancy} Beds Available
+                  </span>
                 </div>
               ` : ''}
 
+              <!-- Card Price & Inspect CTA -->
               <div class="card-footer">
-                <div class="price-block">
-                  <span class="price-amount">₹${minPrice.toLocaleString('en-IN')}</span>
-                  <span class="price-sub">per person / month</span>
+                <div class="card-price-group">
+                  <span class="card-price">₹${minPrice.toLocaleString('en-IN')}</span>
+                  <span class="card-price-sub">per person / month</span>
                 </div>
-                <button class="btn-inspect">View & Book</button>
+                <button class="btn-inspect" onclick="event.stopPropagation(); GharDekho.openDetail('${p.id}')">
+                  Inspect Beds →
+                </button>
               </div>
+
             </div>
           </div>
         `;
@@ -3519,9 +3547,11 @@ const GharDekho = (() => {
   }
 
   function toggleViewport() {
+    if (!el.shell) el.shell = document.getElementById('deviceShell');
     el.shell.classList.toggle('mode-wide');
     const isWide = el.shell.classList.contains('mode-wide');
-    document.getElementById('viewportBtn').textContent = isWide ? '📱 Mobile' : '💻 Wide';
+    const btn = document.getElementById('viewportToggleBtn') || document.getElementById('viewportBtn');
+    if (btn) btn.textContent = isWide ? '📱 Mobile Frame' : '💻 Wide Dashboard';
   }
 
   return {

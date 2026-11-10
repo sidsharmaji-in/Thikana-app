@@ -1,48 +1,68 @@
-/* GharDhundo Design System — Mix A + C (Warm Saffron Energy on Deep Dark Slate) */
+/* =======================================================
+   GharDekho Design System — UI/UX PRO MAX Specification
+   Archetype: Modern Obsidian Slate + Electric Saffron Energy
+   High-contrast, WCAG AA Compliant, Zero-Jank Fluid Scaling
+   ======================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap');
+
 :root {
-  /* Canvas & Surfaces */
-  --bg-canvas: #0B0F17;
-  --bg-surface: #151D2A;
-  --bg-surface-raised: #1E293B;
-  --bg-surface-hover: #26354D;
-  --bg-glass: rgba(21, 29, 42, 0.85);
+  /* Surface Layers (Depth Architecture) */
+  --bg-canvas: #06090E;             /* Layer 0: Obsidian Deep Canvas */
+  --bg-surface: #0C121D;            /* Layer 1: Tinted Slate Container */
+  --bg-surface-elevated: #131B2B;   /* Layer 2: Elevated Card / Module */
+  --bg-surface-hover: #1A2538;      /* Layer 2.5: Interactive Hover State */
+  --bg-surface-active: #202E47;     /* Layer 2.8: Active State */
+  --bg-glass: rgba(12, 18, 29, 0.88); /* Layer 3: Glassmorphism Floating Bar */
+  --bg-glass-card: rgba(19, 27, 43, 0.75);
 
-  /* Boundaries & Lines */
-  --border-subtle: #27354A;
-  --border-medium: #374B69;
+  /* Hairline Borders & Glass Dividers */
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-medium: rgba(255, 255, 255, 0.14);
+  --border-strong: rgba(255, 255, 255, 0.22);
   --border-focus: #FF6B00;
+  --border-accent-glow: rgba(255, 107, 0, 0.4);
 
-  /* Primary Brand: Saffron Orange Energy */
+  /* Brand Primary: Electric Saffron (Indian Energy & Warmth) */
   --color-primary: #FF6B00;
-  --color-primary-hover: #E05D00;
-  --color-primary-active: #C44F00;
-  --color-primary-subtle: rgba(255, 107, 0, 0.15);
-  --color-primary-glow: rgba(255, 107, 0, 0.25);
-  --gradient-primary: linear-gradient(135deg, #FF6B00 0%, #FF8B26 100%);
+  --color-primary-light: #FF8526;
+  --color-primary-hover: #E55C00;
+  --color-primary-active: #CC5200;
+  --color-primary-subtle: rgba(255, 107, 0, 0.12);
+  --color-primary-glow: rgba(255, 107, 0, 0.35);
+  --gradient-primary: linear-gradient(135deg, #FF6B00 0%, #FF8A00 50%, #FFA826 100%);
+  --gradient-card-overlay: linear-gradient(180deg, rgba(6, 9, 14, 0) 30%, rgba(6, 9, 14, 0.92) 100%);
   --on-primary: #FFFFFF;
 
-  /* Trust & Semantic Accents */
-  --color-trust: #10B981;          /* Emerald for verified Makan Maalik & safe spaces */
-  --color-trust-subtle: rgba(16, 185, 129, 0.15);
-  --color-student: #8B5CF6;        /* Purple for student deals & split sharing */
-  --color-student-subtle: rgba(139, 92, 246, 0.15);
-  --color-warning: #F59E0B;        /* Amber for Jal timing & restrictions */
-  --color-warning-subtle: rgba(245, 158, 11, 0.15);
-  --color-danger: #EF4444;
-  --color-danger-subtle: rgba(239, 68, 68, 0.15);
+  /* Trust & Functional Data Accents */
+  --color-trust: #10B981;          /* Emerald Green: Verified Resident / Available Bed */
+  --color-trust-hover: #059669;
+  --color-trust-subtle: rgba(16, 185, 129, 0.14);
+  --color-trust-glow: rgba(16, 185, 129, 0.3);
 
-  /* Typography Colors */
-  --text-primary: #F8FAFC;
-  --text-secondary: #94A3B8;
-  --text-muted: #64748B;
-  --text-inverse: #0B0F17;
+  --color-student: #8B5CF6;        /* Electric Violet: Student Deals / Vibe Score */
+  --color-student-subtle: rgba(139, 92, 246, 0.14);
+  --color-student-glow: rgba(139, 92, 246, 0.3);
 
-  /* Fonts */
-  --font-display: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-body: 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --color-warning: #F59E0B;        /* Amber Gold: Timing alerts / Jal schedules */
+  --color-warning-subtle: rgba(245, 158, 11, 0.14);
+
+  --color-danger: #EF4444;         /* Coral Red: Curfews / Occupied / Errors */
+  --color-danger-subtle: rgba(239, 68, 68, 0.14);
+
+  /* High-Legibility Typography Colors */
+  --text-primary: #FFFFFF;
+  --text-secondary: #CBD5E1;
+  --text-muted: #8492A6;
+  --text-dim: #526075;
+  --text-inverse: #06090E;
+
+  /* Typography Scales */
+  --font-display: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
-  /* Spacing Scale (4px base) */
+  /* Standard 4px / 8px Spacing Grid */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -51,21 +71,26 @@
   --space-6: 24px;
   --space-8: 32px;
   --space-10: 40px;
+  --space-12: 48px;
 
-  /* Radii */
-  --radius-sm: 6px;
+  /* Border Radii */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 18px;
-  --radius-xl: 26px;
+  --radius-xl: 24px;
+  --radius-2xl: 32px;
   --radius-full: 9999px;
 
-  /* Elevation & Shadows */
-  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.35);
-  --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.45);
-  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.6);
-  --shadow-glow: 0 0 20px rgba(255, 107, 0, 0.3);
+  /* Atmospheric Shadows */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.55);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.7);
+  --shadow-glow: 0 0 24px rgba(255, 107, 0, 0.35);
+  --shadow-glow-trust: 0 0 20px rgba(16, 185, 129, 0.3);
 
-  /* Safe Area Mobile */
+  /* Responsive Max-Width Containers */
+  --container-max: 1360px;
+  --header-height: 72px;
   --bottom-bar-height: 68px;
 }
-
