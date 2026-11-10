@@ -2371,3 +2371,123 @@ input:checked + .slider {
 input:checked + .slider:before {
   transform: translateX(18px);
 }
+
+/* =======================================================
+   SLICE 8: HARDENING, ACCESSIBILITY & OFFLINE STYLES
+   ======================================================= */
+
+/* Screen Reader Only Utility (TalkBack / VoiceOver) */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Offline Stale Data Warning Banner */
+.offline-banner {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.95), rgba(217, 119, 6, 0.95));
+  color: #0B0F17;
+  font-weight: 700;
+  font-size: 11px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: var(--shadow-sm);
+  z-index: 100;
+  text-align: center;
+  animation: slideDown 0.3s ease-out;
+}
+
+.offline-dot {
+  width: 8px;
+  height: 8px;
+  background: #DC2626;
+  border-radius: 50%;
+  box-shadow: 0 0 6px rgba(220, 38, 38, 0.8);
+  animation: pulseOffline 1.5s infinite;
+}
+
+@keyframes pulseOffline {
+  0% { transform: scale(0.9); opacity: 0.8; }
+  50% { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.8; }
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(0); }
+}
+
+/* Accessible Touch Targets (Minimum 44px/48dp for Mobile) */
+.btn-inspect, 
+.btn-submit, 
+.btn-primary, 
+.btn-schedule-visit, 
+.btn-send-msg, 
+.nav-item, 
+.chip {
+  min-height: 44px;
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  min-height: 48px;
+  padding: 4px 6px;
+}
+
+.heart-btn, 
+.notif-bell-btn, 
+.btn-close-circle {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* Focus Visible Rings for Keyboard & Switch Access */
+button:focus-visible, 
+input:focus-visible, 
+select:focus-visible, 
+textarea:focus-visible, 
+[tabindex="0"]:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Reduced Motion Preference for Vestibular Sensitivity */
+@media (prefers-reduced-motion: reduce) {
+  *, 
+  *::before, 
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .notif-badge {
+    animation: none !important;
+  }
+
+  .pulse-dot {
+    animation: none !important;
+  }
+
+  .offline-dot {
+    animation: none !important;
+  }
+
+  .beacon-ping {
+    animation: none !important;
+  }
+}

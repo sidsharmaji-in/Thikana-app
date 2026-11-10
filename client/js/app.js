@@ -109,26 +109,122 @@ const GharDekho = (() => {
     subModalContent: document.getElementById('subModalContent'),
     notifModal: document.getElementById('notifModal'),
     notifModalContent: document.getElementById('notifModalContent'),
+    offlineBanner: document.getElementById('offlineBanner'),
+    a11yAnnouncer: document.getElementById('a11yAnnouncer'),
     toast: document.getElementById('toastMsg')
   };
 
+  // Slice 8: Service Worker Registration for Offline PWA
+  function registerServiceWorker() {
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(reg => console.log('⚡ [GharDekho SW] Registered:', reg.scope))
+          .catch(err => console.warn('⚡ [GharDekho SW] Skipped:', err));
+      });
+    }
+  }
+
+  // Slice 8: Screen Reader Live Announcements (TalkBack / VoiceOver)
+  function announceToScreenReader(msg) {
+    if (el.a11yAnnouncer) {
+      el.a11yAnnouncer.textContent = '';
+      setTimeout(() => {
+        el.a11yAnnouncer.textContent = msg;
+      }, 50);
+    }
+  }
+
+  // Slice 8: Network Connection Monitoring (Online / Offline Stale Banner)
+  function setupNetworkListeners() {
+    window.addEventListener('online', () => {
+      if (el.offlineBanner) el.offlineBanner.style.display = 'none';
+      showToast('🟢 Back Online! Syncing changes...');
+      announceToScreenReader('Network restored. Syncing data.');
+      syncOfflineQueue();
+      fetchProperties();
+      fetchSaved();
+      fetchNotifications();
+    });
+
+    window.addEventListener('offline', () => {
+      if (el.offlineBanner) el.offlineBanner.style.display = 'flex';
+      showToast('⚠️ Offline Mode · Loaded from device storage');
+      announceToScreenReader('You are now in offline mode. Viewing cached listings.');
+    });
+
+    if (typeof navigator !== 'undefined' && !navigator.onLine && el.offlineBanner) {
+      el.offlineBanner.style.display = 'flex';
+    }
+  }
+
+  // Slice 8: Offline Action Queue Sync
+  async function syncOfflineQueue() {
+    try {
+      const queueRaw = localStorage.getItem('ghar_offline_queue');
+      if (!queueRaw) return;
+      const actions = JSON.parse(queueRaw);
+      if (!Array.isArray(actions) || actions.length === 0) return;
+
+      const res = await fetch('/api/sync/offline-actions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ actions })
+      });
+      const data = await res.json();
+      if (data.success) {
+        localStorage.removeItem('ghar_offline_queue');
+        console.log(`⚡ Synced ${data.syncedCount} offline actions`);
+      }
+    } catch (e) {
+      console.warn('Sync offline queue skipped:', e);
+    }
+  }
+
+  function queueOfflineAction(action) {
+    try {
+      const queueRaw = localStorage.getItem('ghar_offline_queue') || '[]';
+      const queue = JSON.parse(queueRaw);
+      queue.push({
+        id: `act-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        timestamp: new Date().toISOString(),
+        ...action
+      });
+      localStorage.setItem('ghar_offline_queue', JSON.stringify(queue));
+    } catch (e) {
+      console.warn('Queue offline action failed:', e);
+    }
+  }
+
   // Initialize App
   async function init() {
+    registerServiceWorker();
+    setupNetworkListeners();
     setupEventListeners();
     await Promise.all([fetchProperties(), fetchInquiries(), fetchNotifications(), fetchSaved()]);
     render();
   }
 
-  // Fetch properties from local API or fallback to seed
+  // Fetch properties from local API or fallback to offline cached data
   async function fetchProperties() {
     try {
       const res = await fetch('/api/properties');
       const data = await res.json();
       if (data.success && data.properties) {
         state.properties = data.properties;
+        try {
+          localStorage.setItem('ghar_cached_properties', JSON.stringify(data.properties));
+        } catch (storageErr) {}
       }
     } catch (e) {
-      console.warn('API fetch failed, falling back to local dataset', e);
+      console.warn('API fetch failed, loading from offline cache', e);
+      try {
+        const cached = localStorage.getItem('ghar_cached_properties');
+        if (cached) {
+          state.properties = JSON.parse(cached);
+          if (el.offlineBanner) el.offlineBanner.style.display = 'flex';
+        }
+      } catch (cacheErr) {}
     }
   }
 
@@ -145,14 +241,17 @@ const GharDekho = (() => {
     }
   }
 
-  // Show toast notification
+  // Show toast notification with screen reader announcement
   function showToast(msg) {
     el.toast.textContent = msg;
     el.toast.style.display = 'block';
+    announceToScreenReader(msg);
     setTimeout(() => {
       el.toast.style.display = 'none';
     }, 3200);
   }
+
+  let searchDebounceTimer = null;
 
   // Event Listeners
   function setupEventListeners() {
@@ -160,10 +259,13 @@ const GharDekho = (() => {
     el.roleTenantBtn.addEventListener('click', () => switchRole('tenant'));
     el.roleOwnerBtn.addEventListener('click', () => switchRole('owner'));
 
-    // Search input
+    // Debounced search input (250ms debounce for budget processors)
     el.searchInput.addEventListener('input', (e) => {
-      state.searchQuery = e.target.value.toLowerCase();
-      renderFeed();
+      clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = setTimeout(() => {
+        state.searchQuery = e.target.value.toLowerCase();
+        renderFeed();
+      }, 250);
     });
 
     // Close detail modal on backdrop click
@@ -1967,18 +2069,26 @@ const GharDekho = (() => {
     if (isSaved) {
       state.savedIds.delete(id);
       showToast('Removed from saved rooms');
-      try {
-        await fetch(`/api/saved/${id}`, { method: 'DELETE' });
-      } catch (e) {
-        console.warn('DELETE saved failed', e);
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        queueOfflineAction({ type: 'unsave_property', propertyId: id });
+      } else {
+        try {
+          await fetch(`/api/saved/${id}`, { method: 'DELETE' });
+        } catch (e) {
+          queueOfflineAction({ type: 'unsave_property', propertyId: id });
+        }
       }
     } else {
       state.savedIds.add(id);
       showToast('❤️ Saved to your shortlisted rooms');
-      try {
-        await fetch(`/api/saved/${id}`, { method: 'POST' });
-      } catch (e) {
-        console.warn('POST saved failed', e);
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        queueOfflineAction({ type: 'save_property', propertyId: id });
+      } else {
+        try {
+          await fetch(`/api/saved/${id}`, { method: 'POST' });
+        } catch (e) {
+          queueOfflineAction({ type: 'save_property', propertyId: id });
+        }
       }
     }
     await fetchSaved();

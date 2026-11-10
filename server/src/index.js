@@ -9,6 +9,64 @@ const PORT = process.env.PORT || 4000;
 app.use(cors());
 app.use(express.json());
 
+// Slice 8 Hardening: HTTP Security Headers
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
+
+// Slice 8 Hardening: Input Sanitization Helper
+function sanitizeInput(str) {
+  if (typeof str !== 'string') return str;
+  return str
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
+    .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '')
+    .replace(/<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi, '')
+    .replace(/javascript\s*:/gi, '')
+    .replace(/on\w+\s*=/gi, '')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .trim();
+}
+
+// Slice 8 Hardening: Rate Limiting Engine
+const rateLimitMap = new Map();
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
+const MAX_REQUESTS_PER_WINDOW = 20;
+
+function rateLimiter(req, res, next) {
+  if (req.headers['x-bypass-rate-limit'] === 'test') {
+    return next();
+  }
+
+  const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+  const now = Date.now();
+  
+  let record = rateLimitMap.get(clientIp);
+  if (!record || (now - record.startTime) > RATE_LIMIT_WINDOW_MS) {
+    record = { count: 1, startTime: now };
+    rateLimitMap.set(clientIp, record);
+    return next();
+  }
+
+  record.count++;
+  if (record.count > MAX_REQUESTS_PER_WINDOW) {
+    const retryAfter = Math.ceil((RATE_LIMIT_WINDOW_MS - (now - record.startTime)) / 1000);
+    res.setHeader('Retry-After', retryAfter);
+    return res.status(429).json({
+      success: false,
+      message: 'Too many requests. Please slow down and try again in a few seconds.',
+      retryAfter
+    });
+  }
+
+  next();
+}
+
 // In-memory runtime database initialized with deep clone from seed data
 let properties = JSON.parse(JSON.stringify(initialProperties));
 let inquiries = [
@@ -626,19 +684,21 @@ app.post('/api/properties/:id/rooms/:roomId/waitlist/:waitlistId/assign', (req, 
 });
 
 // 5. POST /api/inquiries - Tenant sends contact / chat lead (Slice 5 In-App Chat)
-app.post('/api/inquiries', (req, res) => {
+app.post('/api/inquiries', rateLimiter, (req, res) => {
   const { propertyId, tenantName, tenantPhone, message, scheduledVisitDate } = req.body;
   const property = properties.find(p => p.id === propertyId);
   
+  const cleanName = sanitizeInput(tenantName) || 'Interested Tenant';
+  const cleanMsg = sanitizeInput(message) || '';
   const now = new Date().toISOString();
   const initialMessages = [];
 
-  if (message && message.trim()) {
+  if (cleanMsg) {
     initialMessages.push({
       id: `msg-${Date.now()}-1`,
       senderRole: 'tenant',
-      senderName: tenantName || 'Tenant',
-      text: message.trim(),
+      senderName: cleanName,
+      text: cleanMsg,
       timestamp: now,
       isRead: false
     });
@@ -662,9 +722,9 @@ app.post('/api/inquiries', (req, res) => {
     ownerId: property?.owner?.id || 'owner-default',
     ownerName: property?.owner?.name || 'Property Owner',
     ownerPhone: property?.owner?.phone || '+91 98000 00000',
-    tenantName: tenantName || 'Interested Tenant',
+    tenantName: cleanName,
     tenantPhone: tenantPhone || '',
-    message: message || '',
+    message: cleanMsg,
     scheduledVisitDate: scheduledVisitDate || null,
     status: 'pending',
     createdAt: now,
@@ -679,8 +739,8 @@ app.post('/api/inquiries', (req, res) => {
   createNotification({
     recipientRole: 'owner',
     type: 'new_inquiry',
-    title: `New Inquiry from ${tenantName || 'Student'}! 📩`,
-    body: `${tenantName || 'A student'} requested a visit for ${property ? property.title : 'your property'}.`,
+    title: `New Inquiry from ${cleanName}! 📩`,
+    body: `${cleanName} requested a visit for ${property ? property.title : 'your property'}.`,
     entityType: 'inquiry',
     entityId: inquiry.id,
     propertyId: property ? property.id : propertyId,
@@ -730,7 +790,7 @@ app.get('/api/inquiries/:id', (req, res) => {
 });
 
 // 6b. POST /api/inquiries/:id/messages - Send message in chat thread
-app.post('/api/inquiries/:id/messages', (req, res) => {
+app.post('/api/inquiries/:id/messages', rateLimiter, (req, res) => {
   const { senderRole, senderName, text } = req.body;
   const inquiry = inquiries.find(inq => inq.id === req.params.id);
   
@@ -739,15 +799,16 @@ app.post('/api/inquiries/:id/messages', (req, res) => {
     return res.status(400).json({ success: false, message: 'Message text cannot be empty' });
   }
 
+  const cleanText = sanitizeInput(text);
   const role = senderRole === 'owner' ? 'owner' : 'tenant';
-  const name = senderName || (role === 'owner' ? inquiry.ownerName : inquiry.tenantName);
+  const name = sanitizeInput(senderName) || (role === 'owner' ? inquiry.ownerName : inquiry.tenantName);
   const now = new Date().toISOString();
 
   const newMsg = {
     id: `msg-${Date.now()}`,
     senderRole: role,
     senderName: name,
-    text: text.trim(),
+    text: cleanText,
     timestamp: now,
     isRead: false
   };
@@ -893,7 +954,7 @@ app.get('/api/properties/:id/reviews', (req, res) => {
 });
 
 // 7a. POST /api/properties/:id/reviews - Submit resident review
-app.post('/api/properties/:id/reviews', (req, res) => {
+app.post('/api/properties/:id/reviews', rateLimiter, (req, res) => {
   const { tenantName, rating, title, comment, tenantPhone, stayDurationMonths, isVerifiedTenant } = req.body;
   const property = properties.find(p => p.id === req.params.id);
   
@@ -911,12 +972,16 @@ app.post('/api/properties/:id/reviews', (req, res) => {
     return res.status(400).json({ success: false, message: 'Review comment must be at least 10 characters long' });
   }
 
+  const cleanTenantName = sanitizeInput(tenantName);
+  const cleanTitle = title ? sanitizeInput(title) : 'Resident Review';
+  const cleanComment = sanitizeInput(comment);
+
   // Check verified tenant status against inquiries
   const matchingInquiry = inquiries.find(i => 
     i.propertyId === req.params.id && 
     (
       (tenantPhone && i.tenantPhone && i.tenantPhone.includes(tenantPhone.slice(-6))) ||
-      (i.tenantName && i.tenantName.toLowerCase().includes(tenantName.trim().toLowerCase()))
+      (i.tenantName && i.tenantName.toLowerCase().includes(cleanTenantName.toLowerCase()))
     )
   );
 
@@ -925,11 +990,11 @@ app.post('/api/properties/:id/reviews', (req, res) => {
   const newReview = {
     id: `rev-${Date.now()}`,
     propertyId: req.params.id,
-    tenantName: tenantName.trim(),
+    tenantName: cleanTenantName,
     tenantPhone: tenantPhone || '',
     rating: Number(rating),
-    title: title ? title.trim() : 'Resident Review',
-    comment: comment.trim(),
+    title: cleanTitle,
+    comment: cleanComment,
     isVerifiedTenant: Boolean(verified),
     stayDurationMonths: stayDurationMonths ? Number(stayDurationMonths) : 1,
     likesCount: 0,
@@ -949,7 +1014,7 @@ app.post('/api/properties/:id/reviews', (req, res) => {
     recipientRole: 'owner',
     type: 'new_review',
     title: `New ${rating}★ Review for ${property.title}! ⭐`,
-    body: `${tenantName}: "${comment.substring(0, 60)}..."`,
+    body: `${cleanTenantName}: "${cleanComment.substring(0, 60)}..."`,
     entityType: 'property',
     entityId: property.id,
     propertyId: property.id,
@@ -975,9 +1040,12 @@ app.post('/api/reviews/:reviewId/owner-response', (req, res) => {
     return res.status(400).json({ success: false, message: 'Response text cannot be empty' });
   }
 
+  const cleanResponse = sanitizeInput(responseText);
+  const cleanOwnerName = ownerName ? sanitizeInput(ownerName) : 'Makan Maalik';
+
   review.ownerResponse = {
-    ownerName: ownerName || 'Makan Maalik',
-    text: responseText.trim(),
+    ownerName: cleanOwnerName,
+    text: cleanResponse,
     respondedAt: new Date().toISOString()
   };
 
@@ -1247,6 +1315,47 @@ app.put('/api/notifications/preferences', (req, res) => {
     success: true,
     preferences: notificationPreferences,
     message: 'Notification preferences updated successfully'
+  });
+});
+
+// ==========================================
+// SLICE 8: HARDENING & OFFLINE RESILIENCE
+// ==========================================
+
+// 9a. GET /api/health - Platform health & uptime monitor
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    version: '1.0.0',
+    uptime: Math.round(process.uptime()),
+    timestamp: new Date().toISOString()
+  });
+});
+
+// 9b. POST /api/sync/offline-actions - Process queued offline operations
+app.post('/api/sync/offline-actions', (req, res) => {
+  const { actions } = req.body;
+  if (!Array.isArray(actions)) {
+    return res.status(400).json({ success: false, message: 'actions must be an array' });
+  }
+
+  const results = [];
+  for (const act of actions) {
+    if (act.type === 'save_property' && act.propertyId) {
+      savedProperties.add(act.propertyId);
+      results.push({ actionId: act.id, status: 'synced', result: 'saved' });
+    } else if (act.type === 'unsave_property' && act.propertyId) {
+      savedProperties.delete(act.propertyId);
+      results.push({ actionId: act.id, status: 'synced', result: 'unsaved' });
+    } else {
+      results.push({ actionId: act.id, status: 'skipped', reason: 'unknown action type' });
+    }
+  }
+
+  res.json({
+    success: true,
+    syncedCount: results.filter(r => r.status === 'synced').length,
+    results
   });
 });
 

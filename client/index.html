@@ -13,49 +13,58 @@
   <!-- Mobile Device Simulator Frame -->
   <main class="device-shell" id="deviceShell">
     
+    <!-- Accessibility Live Region for Screen Readers / TalkBack -->
+    <div id="a11yAnnouncer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- Offline Stale Data Warning Banner (Slice 8) -->
+    <div class="offline-banner" id="offlineBanner" role="status" style="display: none;">
+      <span class="offline-dot"></span>
+      <span>⚠️ Offline Mode · Showing cached rooms & shortlist</span>
+    </div>
+
     <!-- App Header Sticky -->
-    <header class="app-header">
+    <header class="app-header" role="banner">
       <div class="header-top">
         <div class="brand-container">
-          <div class="brand-logo">🏠</div>
+          <div class="brand-logo" aria-hidden="true">🏠</div>
           <div class="brand-name">Ghar<span>Dekho</span></div>
         </div>
 
         <div style="display: flex; align-items: center; gap: 6px;">
           <!-- Notification Bell with Unread Badge -->
-          <button class="notif-bell-btn" id="notifBellBtn" onclick="GharDekho.toggleNotificationDrawer()" title="View Notifications" aria-label="Notifications">
-            <span class="bell-icon">🔔</span>
-            <span class="notif-badge" id="notifBadge" style="display: none;">0</span>
+          <button class="notif-bell-btn" id="notifBellBtn" onclick="GharDekho.toggleNotificationDrawer()" title="View Notifications" aria-label="Notifications & Alerts">
+            <span class="bell-icon" aria-hidden="true">🔔</span>
+            <span class="notif-badge" id="notifBadge" style="display: none;" aria-label="Unread notifications count">0</span>
           </button>
           <!-- Role Switcher -->
-          <div class="role-toggle-group">
-            <button class="role-btn active" id="roleTenantBtn">Kirayedaar</button>
-            <button class="role-btn" id="roleOwnerBtn">Owner</button>
+          <div class="role-toggle-group" role="group" aria-label="User Profile Role">
+            <button class="role-btn active" id="roleTenantBtn" aria-pressed="true">Kirayedaar</button>
+            <button class="role-btn" id="roleOwnerBtn" aria-pressed="false">Owner</button>
           </div>
           <!-- Viewport Mode Toggle -->
-          <button class="viewport-btn" id="viewportBtn" onclick="GharDhundo.toggleViewport()" title="Toggle Mobile / Wide View">
+          <button class="viewport-btn" id="viewportBtn" onclick="GharDhundo.toggleViewport()" title="Toggle Mobile / Wide View" aria-label="Toggle Wide Viewport Simulator">
             💻 Wide
           </button>
         </div>
       </div>
 
       <!-- Location Indicator & City Quick Select -->
-      <div class="location-row">
-        <div class="location-pill" id="cityPill" onclick="GharDhundo.resetFilters()">
+      <div class="location-row" role="region" aria-label="Current city selection">
+        <div class="location-pill" id="cityPill" onclick="GharDhundo.resetFilters()" tabindex="0" role="button" aria-label="Selected city: All cities. Click to reset.">
           📍 All Cities
         </div>
-        <div style="font-size: 11px; color: var(--text-muted);">
+        <div style="font-size: 11px; color: var(--text-muted);" aria-hidden="true">
           Kota • Pune • Jaipur • Delhi
         </div>
       </div>
 
       <!-- Search Input Bar -->
-      <div class="search-bar-wrap">
+      <div class="search-bar-wrap" role="search">
         <div class="search-input-box">
-          <span class="search-icon">🔍</span>
-          <input type="text" id="searchInput" placeholder="Search by coaching, metro, locality (e.g. Allen, Hinjawadi)..." />
+          <span class="search-icon" aria-hidden="true">🔍</span>
+          <input type="text" id="searchInput" placeholder="Search by coaching, metro, locality (e.g. Allen, Hinjawadi)..." aria-label="Search rental properties by coaching, metro, or locality" />
         </div>
-        <button class="filter-btn-trigger" onclick="GharDekho.openFilterSheet()" title="Open Filters">
+        <button class="filter-btn-trigger" onclick="GharDekho.openFilterSheet()" title="Open Filters" aria-label="Open Filter Options Sheet">
           ⚙️
         </button>
       </div>
@@ -102,28 +111,28 @@
   </main>
 
   <!-- Detailed Property Bottom Sheet Modal -->
-  <div class="modal-overlay" id="detailModal">
+  <div class="modal-overlay" id="detailModal" role="dialog" aria-modal="true" aria-label="Property Details Sheet">
     <div class="detail-sheet" id="modalContent">
       <!-- Injected dynamically on click -->
     </div>
   </div>
 
   <!-- Filter Bottom Sheet Modal (Slice 2) -->
-  <div class="modal-overlay" id="filterModal">
+  <div class="modal-overlay" id="filterModal" role="dialog" aria-modal="true" aria-label="Filters Sheet">
     <div class="detail-sheet" id="filterModalContent">
       <!-- Injected dynamically by openFilterSheet() -->
     </div>
   </div>
 
   <!-- Submodal Dialog (Slice 4: Roommate Vibe & Waitlist Sheet) -->
-  <div class="submodal-overlay" id="subModal">
+  <div class="submodal-overlay" id="subModal" role="dialog" aria-modal="true" aria-label="Waitlist and Roommate Dialog">
     <div class="submodal-box" id="subModalContent">
       <!-- Injected dynamically -->
     </div>
   </div>
 
   <!-- Notification Center Bottom Sheet Modal (Slice 7) -->
-  <div class="modal-overlay" id="notifModal">
+  <div class="modal-overlay" id="notifModal" role="dialog" aria-modal="true" aria-label="Notification Center">
     <div class="detail-sheet notif-sheet" id="notifModalContent">
       <!-- Injected dynamically by GharDekho.renderNotifications() -->
     </div>

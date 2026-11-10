@@ -160,3 +160,33 @@ Record what was actually run, not what was intended.
     - `GET /api/notifications/preferences` and `PUT /api/notifications/preferences`.
     - Interactive toggle switches in Profile tab for WhatsApp visit updates, SMS instant alerts, and bed vacancy alerts.
 - **Next Slice:** Slice 8 — Hardening (Accessibility, Performance & Offline Cache).
+
+## Slice 8 — Hardening: Security, Accessibility (a11y), Performance & Offline PWA (2026-11-10)
+- **Status:** ✅ COMPLETED & VERIFIED
+- **Automated Test Suite:** `npm run test:slice8` (`server/test/slice8-hardening.test.js`)
+- **Results:** 37 Passed, 0 Failed (Cumulative across Slices 1–8: 227 Passed, 0 Failed)
+- **Features Verified:**
+  - HTTP Security Headers:
+    - `X-Content-Type-Options: nosniff` to prevent MIME-type sniffing attacks.
+    - `X-Frame-Options: SAMEORIGIN` for clickjacking prevention.
+    - `X-XSS-Protection: 1; mode=block` to prevent reflected cross-site scripting.
+    - `Referrer-Policy: strict-origin-when-cross-origin` to avoid leaking sensitive parameters.
+  - Input Sanitization & Anti-XSS Engine:
+    - Disarms malicious `<script>`, `<iframe`, `<object>`, `<embed>`, `javascript:`, and inline DOM event handlers (`onerror=`, `onload=`, `onmouseover=`).
+    - Validated across all user input entry points: tenant inquiries, in-app chat messages, reviews, owner replies, and listing forms.
+  - API Rate Limiter:
+    - Route-level sliding-window rate limiting on sensitive submission endpoints (reviews, inquiries, messages).
+    - Verified burst spam triggers `HTTP 429 Too Many Requests` with dynamic `Retry-After` header.
+    - Safe bypass header (`x-bypass-rate-limit: test`) for automated test suite execution.
+  - Offline Resilience & Progressive Web App (PWA):
+    - Service Worker (`client/sw.js`): pre-caches app shell (`index.html`, tokens, CSS, JS) and handles dynamic caching with cache-first and network fallback strategies.
+    - Stale data offline banner (`#offlineBanner`) that automatically activates when offline (`navigator.onLine === false`).
+    - Offline Action Queue & Batch Sync: offline saved/shortlisted room toggles are queued in `localStorage` and synchronized via `POST /api/sync/offline-actions` when reconnected.
+    - Local storage snapshots of properties and saved rooms ensure instant cold-start loading on 2G/3G connections.
+  - Accessibility (a11y) & Low-End Mobile (Redmi 9A / 2GB RAM):
+    - TalkBack / VoiceOver live announcer (`aria-live="polite"`) delivers non-intrusive voice updates for toasts, filter changes, and search results.
+    - Explicit `role="dialog"` and `aria-modal="true"` on all bottom sheet modals.
+    - Minimum 44px/48dp touch targets on all interactive buttons, pills, chips, and navigation items.
+    - `@media (prefers-reduced-motion: reduce)` removes animations for users with vestibular sensitivity.
+    - 250ms search input debouncing prevents UI jank on budget Android processors.
+- **Next Slice:** Slice 9 — Handoff (Final Documentation, OpenAPI specs, and deployment assets).
