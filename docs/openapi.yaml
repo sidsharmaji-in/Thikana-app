@@ -592,3 +592,4 @@ components:
           type: array
           minItems: 3
           items: { type: string }
+

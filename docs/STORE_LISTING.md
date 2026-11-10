@@ -106,3 +106,4 @@ GharDekho is engineered with privacy-by-design for Indian students and owners:
    - Screenshot 3: Hyperlocal Realities (Jal Timing, Generator Backup, Western Bath)
    - Screenshot 4: In-App WhatsApp-Style Chat with Makan Maalik
    - Screenshot 5: Shortlisted Rooms with Live Vacancy Freshness Badges
+
