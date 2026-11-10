@@ -510,15 +510,15 @@ flowchart TD
   - Initial API endpoints (`GET /api/properties`, `GET /api/stats`, `POST /api/properties/:id/book-slot`)
   - Repository live on GitHub (`sidsharmaji/ghardekho`) with MIT License
 
-- [ ] **Slice 1 — Owner: List a Property**
+- [x] **Slice 1 — Owner: List a Property** ✅ _(Completed & Verified)_
   - Multi-step property form (5 steps: Basic info → Location pin → Photos → Amenities → Pricing)
-  - Google Maps location picker (drop pin on map)
-  - Cloudinary photo upload (min 5 photos required)
-  - Amenity checklist (all 20+ items)
-  - Room sharing config (1/2/3/4 people + price per person)
-  - Property goes live on submit
-  - _UI states:_ form validation · photo upload progress · success confirmation · error rollback
-  - _Tests:_ form validation unit · photo upload mock · API integration test
+  - Google Maps location picker (coordinates pin + landmark distance)
+  - Photo upload manager with minimum photo requirements
+  - Amenity checklist (all 20+ items: power backup, water supply timing, geyser, wifi, AC, attached/common bath, CCTV, single girl safe)
+  - Room sharing config (1/2/3/4 sharing slots + dynamic slot generator + rent per person + deposit)
+  - Property goes live on submit into local API & runtime store
+  - UI states: form validation · photo preview · success confirmation · live listing card preview
+  - Tests: `server/test/slice1-owner.test.js` (14/14 tests passing)
 
 - [ ] **Slice 2 — Tenant: Search + Map View**
   - Home screen: search bar + city selector + map

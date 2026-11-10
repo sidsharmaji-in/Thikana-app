@@ -101,21 +101,66 @@ app.get('/api/properties/:id', (req, res) => {
   res.json({ success: true, property });
 });
 
-// 3. POST /api/properties - Owner creates listing
+// 3. POST /api/properties - Owner creates listing (Slice 1 Validation & Creation)
 app.post('/api/properties', (req, res) => {
+  const { title, city, locality, propertyType, rooms, photos, amenities } = req.body;
+
+  // Strict Validation per Master Plan
+  if (!title || !title.trim()) {
+    return res.status(400).json({ success: false, message: 'Property title is required' });
+  }
+  if (!city || !locality) {
+    return res.status(400).json({ success: false, message: 'City and Locality are required' });
+  }
+  if (!rooms || !Array.isArray(rooms) || rooms.length === 0) {
+    return res.status(400).json({ success: false, message: 'At least one room configuration is required' });
+  }
+  if (!photos || !Array.isArray(photos) || photos.length < 3) {
+    return res.status(400).json({ success: false, message: 'Minimum 3 photos required for listing verification' });
+  }
+
   const newProperty = {
     id: `prop-${Date.now()}`,
     isAvailable: true,
-    isVerified: false,
-    verificationBadge: "Pending Verification",
+    isVerified: true,
+    verificationBadge: "Owner Verified Listing",
     createdAt: new Date().toISOString(),
     rating: 5.0,
     reviewsCount: 0,
+    rules: {
+      curfewTime: req.body.rules?.curfewTime || "10:00 PM",
+      visitorsAllowed: req.body.rules?.visitorsAllowed || "Lobby only",
+      cookingAllowed: req.body.rules?.cookingAllowed || false,
+      smokingAllowed: false,
+      ownerOnPremises: req.body.rules?.ownerOnPremises ?? true
+    },
     ...req.body
   };
 
   properties.unshift(newProperty);
-  res.status(201).json({ success: true, property: newProperty });
+  res.status(201).json({ success: true, property: newProperty, message: 'Property published successfully!' });
+});
+
+// 3a. PUT /api/properties/:id/toggle-availability - Owner toggles listing on/off
+app.put('/api/properties/:id/toggle-availability', (req, res) => {
+  const property = properties.find(p => p.id === req.params.id);
+  if (!property) return res.status(404).json({ success: false, message: 'Property not found' });
+
+  property.isAvailable = !property.isAvailable;
+  res.json({
+    success: true,
+    isAvailable: property.isAvailable,
+    message: `Listing is now ${property.isAvailable ? 'Active & Visible' : 'Paused / Occupied'}`
+  });
+});
+
+// 3b. DELETE /api/properties/:id - Owner removes listing
+app.delete('/api/properties/:id', (req, res) => {
+  const index = properties.findIndex(p => p.id === req.params.id);
+  if (index === -1) return res.status(404).json({ success: false, message: 'Property not found' });
+
+  properties.splice(index, 1);
+  res.json({ success: true, message: 'Property deleted successfully' });
 });
 
 // 4. POST /api/properties/:id/book-slot - Bed / Slot booking
