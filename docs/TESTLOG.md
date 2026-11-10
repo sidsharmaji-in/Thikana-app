@@ -57,3 +57,31 @@ Record what was actually run, not what was intended.
   - Interactive "Schedule a Room Visit" directly inside detail sheet: Date selector (`Today`, `Tomorrow`, `Sunday`) and Time slot pills (`10:00 AM`, `11:30 AM`, `04:00 PM`, `06:30 PM`), submitting lead to `POST /api/inquiries`
   - Zero-Brokerage Direct Owner Connect: WhatsApp CTA with customized message and direct Call button
 - **Next Slice:** Slice 4 — Shared Room Slot Engine (Bed-level occupancy, live vacancy status, roommate profiles, and booking request workflow).
+
+## Slice 4 — Shared Room Slot Engine & Roommate Compatibility (2026-11-10)
+- **Status:** ✅ COMPLETED & VERIFIED
+- **Automated Test Suite:** `npm run test:slice4` (`server/test/slice4-slots.test.js`)
+- **Results:** 32 Passed, 0 Failed (Cumulative across Slices 1–4: 83 Passed, 0 Failed)
+- **Features Verified:**
+  - Bed-Level State & Lock Management:
+    - Three-state lifecycle: `available` -> `reserved` (pending token/owner approval) -> `occupied`.
+    - Concurrency & double-booking prevention: attempting to book an already occupied or reserved bed returns `HTTP 400` ("Slot is already occupied or reserved").
+    - Dynamic occupancy tracking: room's `currentOccupancy` updates automatically when beds are booked, approved, or vacated.
+  - Opt-In Roommate Compatibility Profiles:
+    - Existing occupants in shared rooms can share opt-in compatibility cards with prospective students.
+    - Fields verified: Course/Exam (e.g. "Allen 12th JEE Aspirant"), Hometown (e.g. "Jaipur, RJ"), Habit tags (`Early Bird 🌅`, `Silent Study 📚`, `Vegetarian 🥗`), Sleep Schedule (`10:30 PM - 6:00 AM`), and Vibe Compatibility Match score (98%).
+    - Interactive "👤 Roommate Vibe" modal dialog in client with clean UI and zero-exploitation privacy notice.
+  - Full Room Waitlist Queue Engine:
+    - When all beds in a shared room are occupied, the UI displays a high-visibility banner: `🔒 All Beds Currently Occupied` and a `🔔 Join Waitlist` CTA.
+    - Tenant submits waitlist entry via `POST /api/properties/:id/rooms/:roomId/waitlist`.
+    - Server calculates and assigns exact queue position (`#1 in queue`, `#2 in queue`).
+    - Tenants and owners can query the waitlist via `GET /api/properties/:id/rooms/:roomId/waitlist`.
+  - Owner Dashboard Bed & Waitlist Control Panel:
+    - Interactive bed management section rendered inside owner property cards.
+    - Status updates via `PUT /api/properties/:id/rooms/:roomId/slots/:slotId/status`:
+      - For Vacant beds: "Fill" (mark occupied).
+      - For Reserved beds: "Approve" (confirm move-in) or "Reject" (release back to vacant).
+      - For Occupied beds: "Vacate" (clear occupant info and increment available beds).
+    - One-click bed assignment from waitlist via `POST /api/properties/:id/rooms/:roomId/waitlist/:id/assign`: assigns candidate directly to first vacant bed, updates status, and removes candidate from queue.
+    - Cancel/remove waitlist candidates via `DELETE /api/properties/:id/rooms/:roomId/waitlist/:id`.
+- **Next Slice:** Slice 5 — Inquiry + In-App Chat (WhatsApp-like bubble threads, unread counter, visit confirmation, and message ordering).

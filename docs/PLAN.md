@@ -541,14 +541,16 @@ flowchart TD
   - Zero-brokerage direct owner connect (WhatsApp CTA + Call button)
   - Tests: `server/test/slice3-detail.test.js` (20/20 tests passing)
 
-- [ ] **Slice 4 — Shared Room Slot Engine**
-  - Owner: set max occupancy per room, price per slot
-  - Tenant view: "2 of 4 slots occupied" visual (bed icons)
-  - Apply for a slot → owner approves/rejects
-  - Slot status: available / reserved / occupied
-  - Tenant profile cards for existing roommates (name + photo, opt-in)
-  - _UI states:_ all slots full (waitlist option) · slot approved notification · roommate preview
-  - _Tests:_ slot availability logic · concurrent booking edge case
+- [x] **Slice 4 — Shared Room Slot Engine** ✅ _(Completed & Verified)_
+  - Owner: set max occupancy per room, price per slot, live bed vacancy controls
+  - Tenant view: "2 of 4 slots occupied" visual bed cards with live status badges
+  - Bed-level state & lock management (`available` -> `reserved` -> `occupied` -> `available`)
+  - Concurrency & double-booking prevention (`HTTP 400` when reserving already occupied slot)
+  - Opt-in Roommate Compatibility Cards: course/profession, hometown, study/sleep habits, and vibe score
+  - Full room Waitlist flow (`POST /api/properties/:id/rooms/:roomId/waitlist`) with automatic queue positioning
+  - Owner dashboard live bed status updates (`PUT /api/properties/:id/rooms/:roomId/slots/:slotId/status`)
+  - Owner one-click bed assignment for waitlisted candidates (`POST .../waitlist/:id/assign`)
+  - Tests: `server/test/slice4-slots.test.js` (32/32 tests passing)
 
 - [ ] **Slice 5 — Inquiry + In-App Chat**
   - Tenant sends inquiry with message

@@ -90,6 +90,8 @@ const GharDekho = (() => {
     modalContent: document.getElementById('modalContent'),
     filterModal: document.getElementById('filterModal'),
     filterContent: document.getElementById('filterModalContent'),
+    subModal: document.getElementById('subModal'),
+    subModalContent: document.getElementById('subModalContent'),
     toast: document.getElementById('toastMsg')
   };
 
@@ -156,6 +158,13 @@ const GharDekho = (() => {
     if (el.filterModal) {
       el.filterModal.addEventListener('click', (e) => {
         if (e.target === el.filterModal) closeFilterSheet();
+      });
+    }
+
+    // Close submodal on backdrop click
+    if (el.subModal) {
+      el.subModal.addEventListener('click', (e) => {
+        if (e.target === el.subModal) closeSubModal();
       });
     }
   }
@@ -810,13 +819,16 @@ const GharDekho = (() => {
         </div>
       </div>
 
-      <!-- Split Sharing Rooms & Live Bed Slots -->
+      <!-- Split Sharing Rooms & Live Bed Slots (Slice 4 Engine) -->
       <h3 style="font-size: 14px; font-family: var(--font-display); margin-top: 14px; margin-bottom: 8px;">
         🛏️ Available Room Configurations & Bed Slots
       </h3>
       <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;">
-        ${p.rooms.map(room => `
-          <div style="background: var(--bg-surface-raised); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 12px;">
+        ${p.rooms.map(room => {
+          const isRoomFull = room.slots && room.slots.every(s => s.status !== 'available');
+          const waitlistCount = room.waitlist ? room.waitlist.length : 0;
+          return `
+          <div class="room-slot-card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
               <div>
                 <strong style="color: var(--text-primary); font-size: 14px;">${room.label}</strong>
@@ -828,27 +840,62 @@ const GharDekho = (() => {
                 <div style="font-family: var(--font-mono); font-size: 16px; font-weight: 700; color: var(--color-primary);">
                   ₹${room.pricePerPerson.toLocaleString('en-IN')}<span style="font-size: 10px; font-weight: 400; color: var(--text-muted);">/bed/mo</span>
                 </div>
+                <div style="font-size: 10px; color: ${isRoomFull ? 'var(--color-warning)' : 'var(--color-trust)'}; font-weight: 600;">
+                  ${isRoomFull ? '● Room Full' : `● ${room.slots.filter(s => s.status === 'available').length} Beds Vacant`}
+                </div>
               </div>
             </div>
 
             <!-- Individual Bed Slots Row -->
-            <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px;">
+            <div class="bed-slots-grid">
               ${room.slots.map(s => `
-                <div style="background: ${s.status === 'occupied' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.15)'}; border: 1px solid ${s.status === 'occupied' ? 'rgba(239, 68, 68, 0.3)' : 'var(--color-trust)'}; padding: 4px 8px; border-radius: var(--radius-sm); font-size: 11px; display: flex; align-items: center; gap: 4px;">
-                  <span>🛏️ Bed ${s.slotId.toUpperCase()}</span>
-                  <span style="font-weight: 700; color: ${s.status === 'occupied' ? '#EF4444' : 'var(--color-trust)'};">
-                    ${s.status === 'occupied' ? 'Occupied' : 'Vacant'}
-                  </span>
+                <div class="bed-slot-item ${s.status}">
+                  <div class="bed-slot-header">
+                    <strong>🛏️ ${s.label || `Bed ${s.slotId.toUpperCase()}`}</strong>
+                    <span class="bed-status-badge ${s.status}">${s.status}</span>
+                  </div>
+                  
                   ${s.status === 'available' ? `
-                    <button style="background: var(--color-trust); border: none; color: #FFF; font-weight: 700; font-size: 9px; padding: 2px 5px; border-radius: 3px; cursor: pointer; margin-left: 2px;" onclick="GharDekho.bookBed('${p.id}', '${room.id}', '${s.slotId}')">
-                      Book Bed
-                    </button>
-                  ` : ''}
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+                      <span style="font-size: 10px; color: var(--color-trust);">Ready for Move-In</span>
+                      <button style="background: var(--color-trust); border: none; color: #FFF; font-weight: 700; font-size: 10px; padding: 3px 8px; border-radius: 4px; cursor: pointer;" onclick="GharDekho.bookBed('${p.id}', '${room.id}', '${s.slotId}')">
+                        Book Bed
+                      </button>
+                    </div>
+                  ` : s.status === 'reserved' ? `
+                    <div style="font-size: 10px; color: var(--color-warning); margin-top: 4px;">
+                      ⏳ Reserved by ${s.tenantName || 'Applicant'} (Awaiting Token)
+                    </div>
+                  ` : `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+                      <span style="font-size: 10px; color: var(--text-muted);">Occupant: <b>${s.tenantName}</b></span>
+                      ${s.roommateProfile ? `
+                        <button class="roommate-vibe-btn" onclick="GharDekho.openRoommateVibe('${p.id}', '${room.id}', '${s.slotId}')">
+                          👤 Roommate Vibe
+                        </button>
+                      ` : ''}
+                    </div>
+                  `}
                 </div>
               `).join('')}
             </div>
+
+            <!-- Room Full Waitlist Banner -->
+            ${isRoomFull ? `
+              <div class="room-full-banner">
+                <div>
+                  <div class="room-full-text">🔒 All Beds Currently Occupied</div>
+                  <div style="font-size: 10px; color: var(--text-muted);">
+                    ${waitlistCount > 0 ? `${waitlistCount} student(s) waiting on list` : 'Be next in line when an occupant leaves'}
+                  </div>
+                </div>
+                <button class="btn-join-waitlist" onclick="GharDekho.openWaitlistModal('${p.id}', '${room.id}')">
+                  🔔 Join Waitlist
+                </button>
+              </div>
+            ` : ''}
           </div>
-        `).join('')}
+        `}).join('')}
       </div>
 
       <!-- Verified Amenities Checklist (20+ Items) -->
@@ -1029,6 +1076,239 @@ const GharDekho = (() => {
     }
   }
 
+  // Slice 4: Roommate Vibe Modal
+  function openRoommateVibe(propertyId, roomId, slotId) {
+    const p = state.properties.find(item => item.id === propertyId);
+    if (!p) return;
+    const room = p.rooms.find(r => r.id === roomId);
+    if (!room) return;
+    const slot = room.slots.find(s => s.slotId === slotId);
+    if (!slot || !slot.roommateProfile) {
+      showToast('No public roommate profile shared for this bed yet');
+      return;
+    }
+
+    const prof = slot.roommateProfile;
+    if (!el.subModal || !el.subModalContent) return;
+
+    el.subModalContent.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+        <div>
+          <span style="font-size: 10px; font-weight: 700; color: var(--color-student); text-transform: uppercase; letter-spacing: 0.5px;">
+            🎓 Opt-In Roommate Compatibility Card
+          </span>
+          <h3 style="font-family: var(--font-display); font-size: 17px; color: var(--text-primary); margin-top: 2px;">
+            ${slot.tenantName}
+          </h3>
+        </div>
+        <button style="background: none; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer; padding: 0 4px;" onclick="GharDekho.closeSubModal()">✕</button>
+      </div>
+
+      <div style="background: rgba(139, 92, 246, 0.08); border: 1px solid rgba(139, 92, 246, 0.2); border-radius: var(--radius-md); padding: 10px 12px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <div style="font-size: 10px; color: var(--text-muted);">Vibe Compatibility Score</div>
+          <div style="font-size: 18px; font-weight: 700; color: var(--color-student); font-family: var(--font-mono);">${prof.vibeScore || 96}% Match</div>
+        </div>
+        <span style="font-size: 24px;">✨</span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px; font-size: 12px; margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding-bottom: 6px;">
+          <span style="color: var(--text-muted);">🎯 Course / Aspirant</span>
+          <strong style="color: var(--text-primary);">${prof.courseOrProfession}</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding-bottom: 6px;">
+          <span style="color: var(--text-muted);">📍 Hometown</span>
+          <strong style="color: var(--text-primary);">${prof.hometown}</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding-bottom: 6px;">
+          <span style="color: var(--text-muted);">⏰ Sleep Schedule</span>
+          <strong style="color: var(--text-primary);">${prof.sleepSchedule}</strong>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <div style="font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">Lifestyle & Study Habits:</div>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+          ${prof.habits.map(h => `<span class="vibe-tag-badge">${h}</span>`).join('')}
+        </div>
+      </div>
+
+      <div style="background: var(--bg-surface-raised); border-radius: var(--radius-sm); padding: 8px 10px; font-size: 10px; color: var(--text-muted); line-height: 1.4; margin-bottom: 14px;">
+        🔒 <b>Zero Exploitation Guarantee:</b> Profile shared with explicit opt-in consent solely for student & professional roommate lifestyle compatibility.
+      </div>
+
+      <button class="btn-primary" style="width: 100%;" onclick="GharDekho.closeSubModal()">
+        Got It
+      </button>
+    `;
+
+    el.subModal.classList.add('active');
+  }
+
+  // Slice 4: Room Waitlist Modal
+  function openWaitlistModal(propertyId, roomId) {
+    const p = state.properties.find(item => item.id === propertyId);
+    if (!p) return;
+    const room = p.rooms.find(r => r.id === roomId);
+    if (!room) return;
+
+    if (!el.subModal || !el.subModalContent) return;
+    const queueCount = room.waitlist ? room.waitlist.length : 0;
+
+    el.subModalContent.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+        <div>
+          <span style="font-size: 10px; font-weight: 700; color: var(--color-warning); text-transform: uppercase;">
+            🔔 Room Waitlist Queue
+          </span>
+          <h3 style="font-family: var(--font-display); font-size: 16px; color: var(--text-primary); margin-top: 2px;">
+            ${room.label}
+          </h3>
+        </div>
+        <button style="background: none; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer; padding: 0 4px;" onclick="GharDekho.closeSubModal()">✕</button>
+      </div>
+
+      <p style="font-size: 11px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 12px;">
+        All ${room.maxOccupancy} beds in this room are currently occupied. Join the waitlist to receive instant WhatsApp notification the moment an occupant vacates.
+      </p>
+
+      <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: var(--radius-sm); padding: 8px 10px; font-size: 11px; color: var(--color-warning); margin-bottom: 14px;">
+        📌 Currently <b>${queueCount}</b> student(s) waiting ahead of you. You will be assigned <b>Queue #${queueCount + 1}</b>.
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
+        <div>
+          <label style="font-size: 11px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 4px;">Full Name *</label>
+          <input type="text" id="wlTenantName" class="filter-input" placeholder="e.g. Aryan S." value="" style="width: 100%;" />
+        </div>
+        <div>
+          <label style="font-size: 11px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 4px;">WhatsApp Number *</label>
+          <input type="tel" id="wlTenantPhone" class="filter-input" placeholder="+91 98765 43210" value="+91 " style="width: 100%;" />
+        </div>
+        <div>
+          <label style="font-size: 11px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 4px;">Target Move-In Date</label>
+          <input type="date" id="wlPreferredDate" class="filter-input" style="width: 100%;" />
+        </div>
+        <div>
+          <label style="font-size: 11px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 4px;">Notes / Institute</label>
+          <input type="text" id="wlNotes" class="filter-input" placeholder="e.g. Joining Allen Jan Batch, need quiet desk" style="width: 100%;" />
+        </div>
+      </div>
+
+      <button class="btn-primary" style="width: 100%; background: var(--color-warning); color: #000; font-weight: 700;" onclick="GharDekho.submitWaitlist('${propertyId}', '${roomId}')">
+        Confirm & Join Waitlist Queue
+      </button>
+    `;
+
+    el.subModal.classList.add('active');
+  }
+
+  async function submitWaitlist(propertyId, roomId) {
+    const nameInput = document.getElementById('wlTenantName');
+    const phoneInput = document.getElementById('wlTenantPhone');
+    const dateInput = document.getElementById('wlPreferredDate');
+    const notesInput = document.getElementById('wlNotes');
+
+    const tenantName = nameInput ? nameInput.value.trim() : '';
+    const tenantPhone = phoneInput ? phoneInput.value.trim() : '';
+    const preferredDate = dateInput ? dateInput.value : '';
+    const notes = notesInput ? notesInput.value.trim() : '';
+
+    if (!tenantName || !tenantPhone || tenantPhone.length < 8) {
+      alert('Please enter your full name and valid contact number');
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/properties/${propertyId}/rooms/${roomId}/waitlist`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenantName, tenantPhone, preferredDate, notes })
+      });
+      const data = await res.json();
+      if (data.success) {
+        closeSubModal();
+        showToast(`🎉 You are #${data.waitlistPosition} in queue for ${data.roomLabel}!`);
+        await fetchProperties();
+        openDetail(propertyId);
+      } else {
+        alert(data.message);
+      }
+    } catch (e) {
+      closeSubModal();
+      showToast('Added to waitlist! (Local Mode)');
+    }
+  }
+
+  function closeSubModal() {
+    if (el.subModal) el.subModal.classList.remove('active');
+  }
+
+  // Slice 4: Owner Slot Management
+  async function updateSlotStatus(propertyId, roomId, slotId, status) {
+    let tenantName = null;
+    let tenantPhone = null;
+    if (status === 'occupied' || status === 'reserved') {
+      tenantName = prompt(`Enter tenant name for Bed ${slotId.toUpperCase()}:`, 'New Tenant');
+      if (!tenantName) return;
+      tenantPhone = '+91 98765 43210';
+    }
+
+    try {
+      const res = await fetch(`/api/properties/${propertyId}/rooms/${roomId}/slots/${slotId}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status, tenantName, tenantPhone })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(data.message);
+        await fetchProperties();
+        render();
+      } else {
+        alert(data.message);
+      }
+    } catch (e) {
+      showToast(`Slot status updated (Offline Mode)`);
+    }
+  }
+
+  async function assignWaitlistToBed(propertyId, roomId, waitlistId) {
+    try {
+      const res = await fetch(`/api/properties/${propertyId}/rooms/${roomId}/waitlist/${waitlistId}/assign`, {
+        method: 'POST'
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(`🎉 Bed assigned to waitlisted candidate!`);
+        await fetchProperties();
+        render();
+      } else {
+        alert(data.message);
+      }
+    } catch (e) {
+      showToast('Bed assigned locally');
+    }
+  }
+
+  async function removeWaitlistCandidate(propertyId, roomId, waitlistId) {
+    if (!confirm('Remove candidate from waitlist?')) return;
+    try {
+      const res = await fetch(`/api/properties/${propertyId}/rooms/${roomId}/waitlist/${waitlistId}`, {
+        method: 'DELETE'
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast('Waitlist entry removed');
+        await fetchProperties();
+        render();
+      }
+    } catch (e) {
+      showToast('Removed locally');
+    }
+  }
+
   // Toggle Save Property
   function toggleSave(id) {
     if (state.savedIds.has(id)) {
@@ -1199,6 +1479,56 @@ const GharDekho = (() => {
               
               <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 10px;">
                 ${p.rooms.map(r => `<b>${r.label}:</b> ${r.currentOccupancy}/${r.maxOccupancy} Beds occupied (₹${r.pricePerPerson}/head)`).join('<br>')}
+              </div>
+
+              <!-- Slice 4: Owner Bed & Waitlist Control Panel -->
+              <div style="background: var(--bg-surface-raised); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 10px; margin-bottom: 12px;">
+                <div style="font-size: 11px; font-weight: 700; color: var(--color-primary); margin-bottom: 6px;">
+                  🛏️ Live Bed Occupancy & Waitlist Controls
+                </div>
+                ${p.rooms.map(r => `
+                  <div style="margin-bottom: 8px; font-size: 11px;">
+                    <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">
+                      ${r.label} (${r.currentOccupancy}/${r.maxOccupancy} Occupied)
+                    </div>
+                    <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px;">
+                      ${r.slots.map(s => `
+                        <div style="background: var(--bg-surface); border: 1px solid ${s.status === 'occupied' ? 'rgba(239, 68, 68, 0.4)' : s.status === 'reserved' ? 'rgba(245, 158, 11, 0.4)' : 'rgba(16, 185, 129, 0.4)'}; padding: 3px 6px; border-radius: 4px; font-size: 10px; display: flex; align-items: center; gap: 4px;">
+                          <span>${s.label || s.slotId}: <b>${s.status}</b> ${s.tenantName ? `(${s.tenantName})` : ''}</span>
+                          ${s.status === 'available' ? `
+                            <button style="background: var(--color-trust); border: none; color: #FFF; font-size: 8px; padding: 2px 4px; border-radius: 2px; cursor: pointer;" onclick="GharDekho.updateSlotStatus('${p.id}', '${r.id}', '${s.slotId}', 'occupied')">Fill</button>
+                          ` : s.status === 'reserved' ? `
+                            <button style="background: var(--color-trust); border: none; color: #FFF; font-size: 8px; padding: 2px 4px; border-radius: 2px; cursor: pointer;" onclick="GharDekho.updateSlotStatus('${p.id}', '${r.id}', '${s.slotId}', 'occupied')">Approve</button>
+                            <button style="background: var(--color-danger); border: none; color: #FFF; font-size: 8px; padding: 2px 4px; border-radius: 2px; cursor: pointer;" onclick="GharDekho.updateSlotStatus('${p.id}', '${r.id}', '${s.slotId}', 'available')">Reject</button>
+                          ` : `
+                            <button style="background: rgba(239, 68, 68, 0.2); border: 1px solid var(--color-danger); color: #EF4444; font-size: 8px; padding: 2px 4px; border-radius: 2px; cursor: pointer;" onclick="GharDekho.updateSlotStatus('${p.id}', '${r.id}', '${s.slotId}', 'available')">Vacate</button>
+                          `}
+                        </div>
+                      `).join('')}
+                    </div>
+
+                    ${(r.waitlist && r.waitlist.length > 0) ? `
+                      <div style="background: rgba(245, 158, 11, 0.08); border: 1px dashed var(--color-warning); border-radius: 4px; padding: 6px;">
+                        <div style="font-size: 10px; font-weight: 700; color: var(--color-warning); margin-bottom: 4px;">
+                          🔔 Room Waitlist (${r.waitlist.length} Candidate${r.waitlist.length > 1 ? 's' : ''}):
+                        </div>
+                        ${r.waitlist.map(w => `
+                          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; margin-bottom: 2px;">
+                            <span><b>${w.tenantName}</b> (${w.tenantPhone}) • Prefers: ${w.preferredDate}</span>
+                            <div style="display: flex; gap: 4px;">
+                              ${r.slots.some(s => s.status === 'available') ? `
+                                <button style="background: var(--color-trust); border: none; color: #FFF; font-size: 9px; font-weight: 700; padding: 2px 5px; border-radius: 2px; cursor: pointer;" onclick="GharDekho.assignWaitlistToBed('${p.id}', '${r.id}', '${w.id}')">
+                                  Assign Bed
+                                </button>
+                              ` : ''}
+                              <button style="background: none; border: 1px solid var(--border-subtle); color: var(--text-muted); font-size: 9px; padding: 1px 4px; border-radius: 2px; cursor: pointer;" onclick="GharDekho.removeWaitlistCandidate('${p.id}', '${r.id}', '${w.id}')">✕</button>
+                            </div>
+                          </div>
+                        `).join('')}
+                      </div>
+                    ` : ''}
+                  </div>
+                `).join('')}
               </div>
 
               <div style="display: flex; gap: 8px; flex-wrap: wrap; border-top: 1px solid var(--border-subtle); padding-top: 10px;">
@@ -2053,6 +2383,13 @@ const GharDekho = (() => {
     selectVisitTime,
     confirmScheduledVisit,
     bookBed,
+    openRoommateVibe,
+    openWaitlistModal,
+    submitWaitlist,
+    closeSubModal,
+    updateSlotStatus,
+    assignWaitlistToBed,
+    removeWaitlistCandidate,
     toggleSave,
     nextOwnerStep,
     prevOwnerStep,

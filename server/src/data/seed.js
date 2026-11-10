@@ -39,11 +39,52 @@ module.exports = [
         bathroomType: "attached",
         hasBalcony: true,
         furnishing: "fully",
+        waitlist: [],
         slots: [
-          { slotId: "s1", status: "occupied", tenantName: "Aryan S. (Allen 12th)", since: "2026-07-01" },
-          { slotId: "s2", status: "occupied", tenantName: "Priyansh M. (Resonance Dropper)", since: "2026-08-15" },
-          { slotId: "s3", status: "available", tenantName: null, since: null },
-          { slotId: "s4", status: "available", tenantName: null, since: null }
+          {
+            slotId: "s1",
+            label: "Bed 1 (Window Side)",
+            status: "occupied",
+            tenantName: "Aryan S.",
+            since: "2026-07-01",
+            roommateProfile: {
+              courseOrProfession: "Allen 12th JEE Aspirant",
+              hometown: "Jaipur, RJ",
+              habits: ["Early Bird 🌅", "Silent Study 📚", "Vegetarian 🥗"],
+              sleepSchedule: "10:30 PM - 6:00 AM",
+              vibeScore: 98
+            }
+          },
+          {
+            slotId: "s2",
+            label: "Bed 2 (Desk View)",
+            status: "occupied",
+            tenantName: "Priyansh M.",
+            since: "2026-08-15",
+            roommateProfile: {
+              courseOrProfession: "Resonance NEET Dropper",
+              hometown: "Kota, RJ",
+              habits: ["Night Owl 🦉", "Tea Lover ☕", "Non-Smoker 🚭"],
+              sleepSchedule: "1:00 AM - 8:30 AM",
+              vibeScore: 94
+            }
+          },
+          {
+            slotId: "s3",
+            label: "Bed 3 (Near Bookshelf)",
+            status: "available",
+            tenantName: null,
+            since: null,
+            roommateProfile: null
+          },
+          {
+            slotId: "s4",
+            label: "Bed 4 (Balcony Side)",
+            status: "available",
+            tenantName: null,
+            since: null,
+            roommateProfile: null
+          }
         ]
       },
       {
@@ -56,9 +97,40 @@ module.exports = [
         bathroomType: "attached",
         hasBalcony: false,
         furnishing: "fully",
+        waitlist: [
+          {
+            id: "wl-k2-1",
+            tenantName: "Harshit Gaur",
+            tenantPhone: "+91 97722 33445",
+            preferredDate: "2026-12-01",
+            notes: "Joining Allen Jan intensive batch",
+            createdAt: "2026-11-08T10:00:00Z"
+          }
+        ],
         slots: [
-          { slotId: "s5", status: "occupied", tenantName: "Devendra K.", since: "2026-06-01" },
-          { slotId: "s6", status: "available", tenantName: null, since: null }
+          {
+            slotId: "s5",
+            label: "Bed A (Corner)",
+            status: "occupied",
+            tenantName: "Devendra K.",
+            since: "2026-06-01",
+            roommateProfile: {
+              courseOrProfession: "Allen Leader Batch",
+              hometown: "Jodhpur, RJ",
+              habits: ["Early Bird 🌅", "Fitness 🏋️", "Clean Freak ✨"],
+              sleepSchedule: "10 PM - 5:30 AM",
+              vibeScore: 96
+            }
+          },
+          {
+            slotId: "s6",
+            label: "Bed B (Window)",
+            status: "reserved",
+            tenantName: "Kunal R.",
+            tenantPhone: "+91 98221 00445",
+            since: "2026-11-09",
+            roommateProfile: null
+          }
         ]
       }
     ],
@@ -138,8 +210,10 @@ module.exports = [
         bathroomType: "attached",
         hasBalcony: true,
         furnishing: "semi",
+        waitlist: [],
         slots: [
-          { slotId: "sp1", status: "available", tenantName: null, since: null }
+          { slotId: "sp1", label: "Master Bed A", status: "available", tenantName: null, since: null, roommateProfile: null },
+          { slotId: "sp2", label: "Studio Bed B", status: "available", tenantName: null, since: null, roommateProfile: null }
         ]
       }
     ],
@@ -219,10 +293,38 @@ module.exports = [
         bathroomType: "attached",
         hasBalcony: true,
         furnishing: "fully",
+        waitlist: [],
         slots: [
-          { slotId: "sj1", status: "occupied", tenantName: "Pooja V. (MNIT B.Tech)", since: "2026-08-01" },
-          { slotId: "sj2", status: "available", tenantName: null, since: null },
-          { slotId: "sj3", status: "available", tenantName: null, since: null }
+          {
+            slotId: "sj1",
+            label: "Bed A (Balcony Corner)",
+            status: "occupied",
+            tenantName: "Pooja V.",
+            since: "2026-08-01",
+            roommateProfile: {
+              courseOrProfession: "MNIT B.Tech 3rd Yr",
+              hometown: "Udaipur, RJ",
+              habits: ["Reader 📖", "Vegetarian 🥗", "Early Riser 🌅"],
+              sleepSchedule: "11:00 PM - 6:30 AM",
+              vibeScore: 99
+            }
+          },
+          {
+            slotId: "sj2",
+            label: "Bed B (Middle)",
+            status: "available",
+            tenantName: null,
+            since: null,
+            roommateProfile: null
+          },
+          {
+            slotId: "sj3",
+            label: "Bed C (Window Desk)",
+            status: "available",
+            tenantName: null,
+            since: null,
+            roommateProfile: null
+          }
         ]
       }
     ],
@@ -302,8 +404,16 @@ module.exports = [
         bathroomType: "attached",
         hasBalcony: true,
         furnishing: "semi",
+        waitlist: [],
         slots: [
-          { slotId: "sd1", status: "available", tenantName: null, since: null }
+          {
+            slotId: "sd1",
+            label: "Single Bed",
+            status: "available",
+            tenantName: null,
+            since: null,
+            roommateProfile: null
+          }
         ]
       }
     ],
@@ -344,4 +454,3 @@ module.exports = [
     reviewsCount: 19
   }
 ];
-

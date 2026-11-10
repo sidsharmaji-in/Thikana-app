@@ -9,8 +9,8 @@ const PORT = process.env.PORT || 4000;
 app.use(cors());
 app.use(express.json());
 
-// In-memory runtime database initialized from seed data
-let properties = [...initialProperties];
+// In-memory runtime database initialized with deep clone from seed data
+let properties = JSON.parse(JSON.stringify(initialProperties));
 let inquiries = [
   {
     id: "inq-101",
@@ -169,6 +169,28 @@ app.post('/api/properties', (req, res) => {
     return res.status(400).json({ success: false, message: 'Minimum 3 photos required for listing verification' });
   }
 
+  const processedRooms = rooms.map((r, idx) => {
+    const maxOcc = r.maxOccupancy || 1;
+    const slots = r.slots && r.slots.length > 0 ? r.slots : Array.from({ length: maxOcc }, (_, sIdx) => ({
+      slotId: `s-${idx + 1}-${sIdx + 1}`,
+      label: `Bed ${String.fromCharCode(65 + sIdx)}`,
+      status: 'available',
+      tenantName: null,
+      tenantPhone: null,
+      since: null,
+      roommateProfile: null
+    }));
+
+    return {
+      ...r,
+      id: r.id || `room-${Date.now()}-${idx + 1}`,
+      maxOccupancy: maxOcc,
+      currentOccupancy: slots.filter(s => s.status === 'occupied').length,
+      waitlist: r.waitlist || [],
+      slots
+    };
+  });
+
   const newProperty = {
     id: `prop-${Date.now()}`,
     isAvailable: true,
@@ -184,7 +206,8 @@ app.post('/api/properties', (req, res) => {
       smokingAllowed: false,
       ownerOnPremises: req.body.rules?.ownerOnPremises ?? true
     },
-    ...req.body
+    ...req.body,
+    rooms: processedRooms
   };
 
   properties.unshift(newProperty);
@@ -213,9 +236,9 @@ app.delete('/api/properties/:id', (req, res) => {
   res.json({ success: true, message: 'Property deleted successfully' });
 });
 
-// 4. POST /api/properties/:id/book-slot - Bed / Slot booking
+// 4. POST /api/properties/:id/book-slot - Bed / Slot booking (Slice 4 State Lock)
 app.post('/api/properties/:id/book-slot', (req, res) => {
-  const { roomId, slotId, tenantName, tenantPhone } = req.body;
+  const { roomId, slotId, tenantName, tenantPhone, status = 'occupied', roommateProfile } = req.body;
   const property = properties.find(p => p.id === req.params.id);
   
   if (!property) return res.status(404).json({ success: false, message: 'Property not found' });
@@ -228,14 +251,166 @@ app.post('/api/properties/:id/book-slot', (req, res) => {
     return res.status(400).json({ success: false, message: 'Slot is already occupied or reserved' });
   }
 
-  slot.status = 'occupied';
+  slot.status = status === 'reserved' ? 'reserved' : 'occupied';
   slot.tenantName = tenantName || 'New Tenant';
+  slot.tenantPhone = tenantPhone || null;
   slot.since = new Date().toISOString().split('T')[0];
+  if (roommateProfile) {
+    slot.roommateProfile = roommateProfile;
+  }
   room.currentOccupancy = room.slots.filter(s => s.status === 'occupied').length;
 
   res.json({
     success: true,
-    message: `Bed successfully reserved in ${room.label}! Owner notified.`,
+    message: `Bed ${slot.label || slot.slotId} successfully ${slot.status === 'reserved' ? 'reserved' : 'booked'} in ${room.label}! Owner notified.`,
+    slot,
+    room
+  });
+});
+
+// 4a. PUT /api/properties/:id/rooms/:roomId/slots/:slotId/status - Owner updates slot status
+app.put('/api/properties/:id/rooms/:roomId/slots/:slotId/status', (req, res) => {
+  const { status, tenantName, tenantPhone, roommateProfile } = req.body;
+  const validStatuses = ['available', 'reserved', 'occupied'];
+  
+  if (!status || !validStatuses.includes(status)) {
+    return res.status(400).json({ success: false, message: 'Status must be one of: available, reserved, occupied' });
+  }
+
+  const property = properties.find(p => p.id === req.params.id);
+  if (!property) return res.status(404).json({ success: false, message: 'Property not found' });
+  
+  const room = property.rooms.find(r => r.id === req.params.roomId);
+  if (!room) return res.status(404).json({ success: false, message: 'Room not found' });
+  
+  const slot = room.slots.find(s => s.slotId === req.params.slotId);
+  if (!slot) return res.status(404).json({ success: false, message: 'Slot not found' });
+
+  slot.status = status;
+  if (status === 'available') {
+    slot.tenantName = null;
+    slot.tenantPhone = null;
+    slot.since = null;
+    slot.roommateProfile = null;
+  } else {
+    if (tenantName) slot.tenantName = tenantName;
+    if (tenantPhone) slot.tenantPhone = tenantPhone;
+    if (!slot.since) slot.since = new Date().toISOString().split('T')[0];
+    if (roommateProfile !== undefined) slot.roommateProfile = roommateProfile;
+  }
+
+  room.currentOccupancy = room.slots.filter(s => s.status === 'occupied').length;
+
+  res.json({
+    success: true,
+    message: `Bed ${slot.label || slot.slotId} is now ${status}`,
+    slot,
+    room
+  });
+});
+
+// 4b. POST /api/properties/:id/rooms/:roomId/waitlist - Tenant joins waitlist for full room
+app.post('/api/properties/:id/rooms/:roomId/waitlist', (req, res) => {
+  const { tenantName, tenantPhone, preferredDate, notes } = req.body;
+  
+  if (!tenantName || !tenantName.trim()) {
+    return res.status(400).json({ success: false, message: 'Tenant name is required for waitlist registration' });
+  }
+  if (!tenantPhone || !tenantPhone.trim()) {
+    return res.status(400).json({ success: false, message: 'Contact phone number is required' });
+  }
+
+  const property = properties.find(p => p.id === req.params.id);
+  if (!property) return res.status(404).json({ success: false, message: 'Property not found' });
+
+  const room = property.rooms.find(r => r.id === req.params.roomId);
+  if (!room) return res.status(404).json({ success: false, message: 'Room not found' });
+
+  if (!room.waitlist) room.waitlist = [];
+
+  const entry = {
+    id: `wl-${Date.now()}`,
+    tenantName: tenantName.trim(),
+    tenantPhone: tenantPhone.trim(),
+    preferredDate: preferredDate || new Date().toISOString().split('T')[0],
+    notes: notes || 'Awaiting vacant bed notification',
+    createdAt: new Date().toISOString()
+  };
+
+  room.waitlist.push(entry);
+
+  res.status(201).json({
+    success: true,
+    message: `Added to waitlist! You are #${room.waitlist.length} in queue.`,
+    waitlistPosition: room.waitlist.length,
+    entry,
+    roomLabel: room.label
+  });
+});
+
+// 4c. GET /api/properties/:id/rooms/:roomId/waitlist - View room waitlist
+app.get('/api/properties/:id/rooms/:roomId/waitlist', (req, res) => {
+  const property = properties.find(p => p.id === req.params.id);
+  if (!property) return res.status(404).json({ success: false, message: 'Property not found' });
+
+  const room = property.rooms.find(r => r.id === req.params.roomId);
+  if (!room) return res.status(404).json({ success: false, message: 'Room not found' });
+
+  res.json({
+    success: true,
+    count: room.waitlist ? room.waitlist.length : 0,
+    waitlist: room.waitlist || []
+  });
+});
+
+// 4d. DELETE /api/properties/:id/rooms/:roomId/waitlist/:waitlistId - Remove from waitlist
+app.delete('/api/properties/:id/rooms/:roomId/waitlist/:waitlistId', (req, res) => {
+  const property = properties.find(p => p.id === req.params.id);
+  if (!property) return res.status(404).json({ success: false, message: 'Property not found' });
+
+  const room = property.rooms.find(r => r.id === req.params.roomId);
+  if (!room) return res.status(404).json({ success: false, message: 'Room not found' });
+
+  if (!room.waitlist) room.waitlist = [];
+  const idx = room.waitlist.findIndex(w => w.id === req.params.waitlistId);
+  if (idx === -1) return res.status(404).json({ success: false, message: 'Waitlist entry not found' });
+
+  const removed = room.waitlist.splice(idx, 1)[0];
+  res.json({ success: true, message: 'Candidate removed from waitlist', removed });
+});
+
+// 4e. POST /api/properties/:id/rooms/:roomId/waitlist/:waitlistId/assign - Owner assigns waitlisted candidate to vacant bed
+app.post('/api/properties/:id/rooms/:roomId/waitlist/:waitlistId/assign', (req, res) => {
+  const property = properties.find(p => p.id === req.params.id);
+  if (!property) return res.status(404).json({ success: false, message: 'Property not found' });
+
+  const room = property.rooms.find(r => r.id === req.params.roomId);
+  if (!room) return res.status(404).json({ success: false, message: 'Room not found' });
+
+  if (!room.waitlist) room.waitlist = [];
+  const candidateIndex = room.waitlist.findIndex(w => w.id === req.params.waitlistId);
+  if (candidateIndex === -1) {
+    return res.status(404).json({ success: false, message: 'Waitlist candidate not found' });
+  }
+
+  // Find first available slot
+  const vacantSlot = room.slots.find(s => s.status === 'available');
+  if (!vacantSlot) {
+    return res.status(400).json({ success: false, message: 'No vacant bed available to assign in this room. Please release a bed first.' });
+  }
+
+  const candidate = room.waitlist.splice(candidateIndex, 1)[0];
+  vacantSlot.status = 'occupied';
+  vacantSlot.tenantName = candidate.tenantName;
+  vacantSlot.tenantPhone = candidate.tenantPhone;
+  vacantSlot.since = new Date().toISOString().split('T')[0];
+  room.currentOccupancy = room.slots.filter(s => s.status === 'occupied').length;
+
+  res.json({
+    success: true,
+    message: `Bed ${vacantSlot.label || vacantSlot.slotId} assigned to ${candidate.tenantName}!`,
+    assignedSlot: vacantSlot,
+    candidate,
     room
   });
 });
@@ -290,4 +465,3 @@ app.listen(PORT, () => {
   console.log(`🏠 GharDekho Server running on http://localhost:${PORT}`);
   console.log(`✨ Mix A+C Design System active (Dark Slate + Saffron Orange)`);
 });
-
