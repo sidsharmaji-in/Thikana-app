@@ -1,0 +1,594 @@
+openapi: 3.0.3
+info:
+  title: GharDekho REST API
+  description: >
+    Production REST API for GharDekho (GharDhundo) — India's trusted, zero-brokerage
+    rental property marketplace for students and working professionals.
+    Supports individual bed sharing allocations, hyperlocal Indian reality checks (Jal timing,
+    power backup resilience, attached baths), in-app chat, resident review verifications,
+    Aadhaar owner KYC, and offline synchronization.
+  version: 1.0.0
+  contact:
+    name: GharDekho Engineering Team
+    url: https://github.com/sidsharmaji/ghardekho
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:4000
+    description: Local Development & Simulator Server
+  - url: https://api.ghardekho.in
+    description: Production Cloud API
+
+tags:
+  - name: Properties
+    description: Property listings, search, geospatial filtering and owner CRUD
+  - name: Shared Room Engine
+    description: Individual bed slot reservations, occupancy toggles, roommate vibe matching & waitlists
+  - name: Inquiries & Chat
+    description: In-app real-time messaging, visit scheduling, and read receipts
+  - name: Reviews & KYC
+    description: Verified resident ratings, Makan Maalik responses, and Aadhaar identity verification
+  - name: Saved Listings
+    description: Tenant wishlists and live availability/freshness tracking
+  - name: Notifications
+    description: Real-time notification center and notification channel preferences
+  - name: System & Offline
+    description: Health monitoring, rate limiting, and offline action synchronization
+
+paths:
+  /api/health:
+    get:
+      tags: [System & Offline]
+      summary: Health check and uptime monitor
+      responses:
+        '200':
+          description: Service is healthy and operational
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "healthy" }
+                  version: { type: string, example: "1.0.0" }
+                  uptime: { type: integer, example: 420 }
+                  timestamp: { type: string, format: date-time }
+
+  /api/properties:
+    get:
+      tags: [Properties]
+      summary: Search and filter rental properties
+      parameters:
+        - name: city
+          in: query
+          schema: { type: string }
+          description: City name (e.g. Kota, Pune, Jaipur, Delhi)
+        - name: query
+          in: query
+          schema: { type: string }
+          description: Locality or landmark keyword (e.g. Allen, Hinjawadi)
+        - name: budgetMin
+          in: query
+          schema: { type: integer }
+        - name: budgetMax
+          in: query
+          schema: { type: integer }
+        - name: gender
+          in: query
+          schema: { type: string, enum: [any, male, female] }
+        - name: sharing
+          in: query
+          schema: { type: string, enum: [all, '1', '2', '3', '4'] }
+        - name: amenities
+          in: query
+          schema: { type: string }
+          description: Comma-separated amenity keys (e.g. wifi,power_backup)
+        - name: lat
+          in: query
+          schema: { type: number }
+        - name: lng
+          in: query
+          schema: { type: number }
+        - name: radiusKm
+          in: query
+          schema: { type: number, default: 5 }
+        - name: sortBy
+          in: query
+          schema: { type: string, enum: [distance, price_asc, price_desc, rating] }
+      responses:
+        '200':
+          description: Array of matching properties
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  count: { type: integer }
+                  properties:
+                    type: array
+                    items: { $ref: '#/components/schemas/Property' }
+
+    post:
+      tags: [Properties]
+      summary: Publish a new property listing (Makan Maalik)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PropertyInput' }
+      responses:
+        '201':
+          description: Property published successfully
+        '400':
+          description: Missing required fields or insufficient photos (<3)
+
+  /api/properties/{id}:
+    get:
+      tags: [Properties]
+      summary: Retrieve full property details with rooms, amenities, and owner info
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Complete property details
+        '404':
+          description: Property not found
+    delete:
+      tags: [Properties]
+      summary: Delete or archive listing
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Listing deleted
+
+  /api/properties/{id}/toggle-available:
+    post:
+      tags: [Properties]
+      summary: Pause or resume property visibility
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Availability status updated
+
+  /api/properties/{id}/rooms/{roomId/slots/{slotId}/status:
+    put:
+      tags: [Shared Room Engine]
+      summary: Update bed slot status (available, reserved, occupied)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: roomId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: slotId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { type: string, enum: [available, reserved, occupied] }
+                tenantName: { type: string }
+      responses:
+        '200':
+          description: Bed status transitioned successfully
+        '400':
+          description: Invalid status or bed already occupied
+
+  /api/properties/{id}/rooms/{roomId}/waitlist:
+    get:
+      tags: [Shared Room Engine]
+      summary: Get waiting list queue for room
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: roomId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Queue list with applicant details and position
+    post:
+      tags: [Shared Room Engine]
+      summary: Join waiting list for fully occupied room
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: roomId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [applicantName, phone]
+              properties:
+                applicantName: { type: string }
+                phone: { type: string }
+                targetCourse: { type: string }
+      responses:
+        '201':
+          description: Joined waitlist with queue position assigned
+
+  /api/inquiries:
+    get:
+      tags: [Inquiries & Chat]
+      summary: List chat threads
+      parameters:
+        - name: role
+          in: query
+          schema: { type: string, enum: [tenant, owner] }
+        - name: phone
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: List of inquiry chat threads
+    post:
+      tags: [Inquiries & Chat]
+      summary: Create new inquiry and schedule room visit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [propertyId]
+              properties:
+                propertyId: { type: string }
+                tenantName: { type: string }
+                tenantPhone: { type: string }
+                message: { type: string }
+                scheduledVisitDate: { type: string }
+      responses:
+        '201':
+          description: Inquiry created and Makan Maalik notified
+        '429':
+          description: Rate limit exceeded
+
+  /api/inquiries/{id}:
+    get:
+      tags: [Inquiries & Chat]
+      summary: Get chat thread and mark read
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: reader
+          in: query
+          schema: { type: string, enum: [tenant, owner] }
+      responses:
+        '200':
+          description: Chat thread with chronological message history
+
+  /api/inquiries/{id}/messages:
+    post:
+      tags: [Inquiries & Chat]
+      summary: Send message in conversation thread
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [senderRole, text]
+              properties:
+                senderRole: { type: string, enum: [tenant, owner] }
+                senderName: { type: string }
+                text: { type: string }
+      responses:
+        '201':
+          description: Message delivered and notification dispatched
+
+  /api/inquiries/{id}/visit-status:
+    put:
+      tags: [Inquiries & Chat]
+      summary: Confirm, reschedule, or cancel scheduled room visit
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { type: string, enum: [confirmed, rescheduled, cancelled, visited] }
+                scheduledVisitDate: { type: string }
+                note: { type: string }
+      responses:
+        '200':
+          description: Visit schedule confirmed and concierge message created
+
+  /api/properties/{id}/reviews:
+    get:
+      tags: [Reviews & KYC]
+      summary: Get property reviews, rating average, and star breakdown
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Reviews array and aggregate statistics
+    post:
+      tags: [Reviews & KYC]
+      summary: Submit a verified resident review
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tenantName, rating, comment]
+              properties:
+                tenantName: { type: string }
+                rating: { type: integer, minimum: 1, maximum: 5 }
+                title: { type: string }
+                comment: { type: string, minLength: 10 }
+                tenantPhone: { type: string }
+                stayDurationMonths: { type: integer }
+      responses:
+        '201':
+          description: Review published with verified resident check
+        '400':
+          description: Validation error (<10 chars or invalid star rating)
+
+  /api/reviews/{reviewId}/owner-response:
+    post:
+      tags: [Reviews & KYC]
+      summary: Post a public Makan Maalik reply to review
+      parameters:
+        - name: reviewId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [responseText]
+              properties:
+                responseText: { type: string }
+                ownerName: { type: string }
+      responses:
+        '200':
+          description: Response published
+
+  /api/properties/{id}/verify-owner:
+    post:
+      tags: [Reviews & KYC]
+      summary: Submit Makan Maalik Aadhaar / Government KYC Verification
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [documentType, documentNumberLast4]
+              properties:
+                documentType: { type: string, example: "Aadhaar Card" }
+                documentNumberLast4: { type: string, example: "4921" }
+      responses:
+        '200':
+          description: Owner verified and Aadhaar trust badge awarded
+
+  /api/saved:
+    get:
+      tags: [Saved Listings]
+      summary: Retrieve tenant shortlisted rooms with live freshness and availability
+      responses:
+        '200':
+          description: Array of saved properties with vacancy urgency badges
+
+  /api/saved/{id}:
+    post:
+      tags: [Saved Listings]
+      summary: Add room to shortlist
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Property bookmarked
+    delete:
+      tags: [Saved Listings]
+      summary: Remove room from shortlist
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Removed from shortlist
+
+  /api/notifications:
+    get:
+      tags: [Notifications]
+      summary: Retrieve in-app notifications feed
+      parameters:
+        - name: role
+          in: query
+          schema: { type: string, enum: [tenant, owner, all] }
+        - name: unreadOnly
+          in: query
+          schema: { type: boolean }
+      responses:
+        '200':
+          description: Notifications feed with unread count
+
+  /api/notifications/mark-all-read:
+    post:
+      tags: [Notifications]
+      summary: Mark all notifications as read
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                role: { type: string, enum: [tenant, owner] }
+      responses:
+        '200':
+          description: All notifications marked read
+
+  /api/notifications/preferences:
+    get:
+      tags: [Notifications]
+      summary: Get notification channel settings
+      responses:
+        '200':
+          description: Current notification preferences
+    put:
+      tags: [Notifications]
+      summary: Update notification settings (WhatsApp, SMS, Vacancy Alerts)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                whatsappUpdates: { type: boolean }
+                smsAlerts: { type: boolean }
+                slotVacancyAlerts: { type: boolean }
+      responses:
+        '200':
+          description: Preferences updated
+
+  /api/sync/offline-actions:
+    post:
+      tags: [System & Offline]
+      summary: Batch synchronize actions performed while offline
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [actions]
+              properties:
+                actions:
+                  type: array
+                  items:
+                    type: object
+                    required: [type]
+                    properties:
+                      id: { type: string }
+                      type: { type: string, enum: [save_property, unsave_property] }
+                      propertyId: { type: string }
+      responses:
+        '200':
+          description: Batched actions synchronized
+
+components:
+  schemas:
+    Property:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        propertyType: { type: string }
+        city: { type: string }
+        locality: { type: string }
+        address: { type: string }
+        lat: { type: number }
+        lng: { type: number }
+        price: { type: integer }
+        rating: { type: number }
+        reviewsCount: { type: integer }
+        isAvailable: { type: boolean }
+        photos:
+          type: array
+          items: { type: string }
+        amenities:
+          type: object
+        rooms:
+          type: array
+          items: { $ref: '#/components/schemas/Room' }
+
+    Room:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        maxOccupancy: { type: integer }
+        currentOccupancy: { type: integer }
+        pricePerPerson: { type: integer }
+        slots:
+          type: array
+          items:
+            type: object
+            properties:
+              slotId: { type: string }
+              slotName: { type: string }
+              status: { type: string, enum: [available, reserved, occupied] }
+              tenantName: { type: string }
+
+    PropertyInput:
+      type: object
+      required: [title, city, locality, address, photos]
+      properties:
+        title: { type: string }
+        city: { type: string }
+        locality: { type: string }
+        address: { type: string }
+        photos:
+          type: array
+          minItems: 3
+          items: { type: string }
