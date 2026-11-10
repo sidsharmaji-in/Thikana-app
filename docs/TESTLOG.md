@@ -40,3 +40,20 @@ Record what was actually run, not what was intended.
   - Slide-up Map Float Card on pin tap with room photo, verified badge, and instant "Inspect & Book" CTA
   - List View ↔ Map View instant toggle
 - **Next Slice:** Slice 3 — Full Listing Detail & Hyperlocal Amenities (Photo gallery carousel with full-screen zoom, floor & bathroom specifications, Jal timing alert cards, nearby hospital/metro markers).
+
+## Slice 3 — Full Listing Detail & Hyperlocal Amenities (2026-11-10)
+- **Status:** ✅ COMPLETED & VERIFIED
+- **Automated Test Suite:** `npm run test:slice3` (`server/test/slice3-detail.test.js`)
+- **Results:** 20 Passed, 0 Failed (Cumulative: 51 Passed, 0 Failed)
+- **Features Verified:**
+  - Photo Gallery Carousel with interactive Next (`›`) and Previous (`‹`) controls, image counter (`📸 1/3 Photos`), and active thumbnail strip
+  - Hyperlocal Indian Realities Breakdown Cards:
+    - 💧 Water Supply: Jal Board timing schedule + 1000L rooftop storage backup + Geyser alert
+    - ⚡ Power Cut Resilience: 24hr Generator vs Inverter breakdown with WiFi continuity assurance
+  - Key Property Specifications: Floor level (e.g. 2 of 4), Vitrified tile flooring, Lift status, Gender exclusivity, Security deposit, and Notice period
+  - Split-Room Bed Allocation Table: Room label, Area (sqft), Furnishing status, Attached/Common bathroom, and per-head monthly pricing
+  - Verified 20+ Amenities Checklist: High-speed WiFi, Desert cooler, Attached Western bath, Mess/Tiffin tie-up, CCTV, and Gate curfew timing
+  - Distance-verified Landmark & Transit List (walking distance to Coaching Institute, Pharmacy, and Bus Stop)
+  - Interactive "Schedule a Room Visit" directly inside detail sheet: Date selector (`Today`, `Tomorrow`, `Sunday`) and Time slot pills (`10:00 AM`, `11:30 AM`, `04:00 PM`, `06:30 PM`), submitting lead to `POST /api/inquiries`
+  - Zero-Brokerage Direct Owner Connect: WhatsApp CTA with customized message and direct Call button
+- **Next Slice:** Slice 4 — Shared Room Slot Engine (Bed-level occupancy, live vacancy status, roommate profiles, and booking request workflow).

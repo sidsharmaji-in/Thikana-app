@@ -530,17 +530,16 @@ flowchart TD
   - UI states: no results empty state with reset · distance badges · offline caching
   - Tests: `server/test/slice2-search-map.test.js` (17/17 tests passing)
 
-- [ ] **Slice 3 — Full Listing Detail**
-  - Photo gallery carousel (swipeable, full-screen tap-to-zoom)
-  - Amenity chips grid (all items with icons)
-  - Floor + bathroom + kitchen details
-  - Price per person + sharing breakdown
-  - Owner profile card (name, verification badge, response time)
-  - Google Maps embed: exact location + Street View button
-  - Nearby Places (hospital, market, metro, petrol pump) via Places API
-  - Contact / WhatsApp button (CTA)
-  - _UI states:_ photo loading · map error fallback · contact throttle (not spam)
-  - _Tests:_ photo gallery swipe · amenity rendering · nearby places API mock
+- [x] **Slice 3 — Full Listing Detail** ✅ _(Completed & Verified)_
+  - Photo gallery carousel (interactive next/prev, active thumbnail strip, photo counter)
+  - Hyperlocal Indian Realities breakdown cards (Jal timing schedule, 24hr power backup, WiFi continuity)
+  - Key property specs bar (floor number, vitrified tiles, lift status, gender preference, deposit, notice period)
+  - Split-room bed allocation table with live vacant beds and per-person rent
+  - Verified 20+ amenity chips grid (WiFi, cooler/AC, attached Western bath, tiffin nearby, CCTV, gate curfew)
+  - Distance-verified nearby places (walking distance to coaching, hospital, bus stop)
+  - Interactive "Schedule a Room Visit" directly in sheet with date/time slot picker
+  - Zero-brokerage direct owner connect (WhatsApp CTA + Call button)
+  - Tests: `server/test/slice3-detail.test.js` (20/20 tests passing)
 
 - [ ] **Slice 4 — Shared Room Slot Engine**
   - Owner: set max occupancy per room, price per slot

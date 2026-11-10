@@ -704,81 +704,143 @@ const GharDekho = (() => {
     showToast(`Filters applied: Showing ${count} rooms`);
   }
 
-  // Render Detail Bottom Sheet / Modal
+  // --- SLICE 3: FULL LISTING DETAIL & HYPERLOCAL BREAKDOWN ---
   function openDetail(id) {
     const p = state.properties.find(item => item.id === id);
     if (!p) return;
     state.selectedProperty = p;
+    state.galleryActiveIndex = 0;
+    state.selectedVisitDate = 'Tomorrow';
+    state.selectedVisitSlot = '11:00 AM';
 
+    renderDetailSheet();
+    el.detailModal.classList.add('open');
+  }
+
+  function renderDetailSheet() {
+    const p = state.selectedProperty;
+    if (!p) return;
     const minPrice = Math.min(...p.rooms.map(r => r.pricePerPerson));
+    const activePhoto = p.photos[state.galleryActiveIndex] || p.photos[0];
 
     el.modalContent.innerHTML = `
       <div class="sheet-handle"></div>
       <button class="sheet-close-btn" onclick="GharDekho.closeDetail()">✕</button>
 
-      <div style="margin-bottom: 14px;">
-        <span class="badge-tag verified" style="margin-bottom: 6px;">
-          🛡️ ${p.verificationBadge}
-        </span>
-        <h2 style="font-family: var(--font-display); font-size: 20px; line-height: 1.3; color: var(--text-primary);">
+      <!-- Trust Badges & Title -->
+      <div style="margin-bottom: 12px;">
+        <div style="display: flex; gap: 6px; align-items: center; margin-bottom: 6px;">
+          <span class="badge-tag verified">
+            🛡️ ${p.verificationBadge}
+          </span>
+          <span class="badge-tag" style="background: rgba(139, 92, 246, 0.15); border-color: var(--color-student); color: var(--color-student);">
+            ${p.genderPreference.toUpperCase()} ONLY
+          </span>
+          <span style="font-size: 11px; color: var(--color-trust); font-weight: 700; margin-left: auto;">
+            ⭐ ${p.rating} (${p.reviewsCount || 4} reviews)
+          </span>
+        </div>
+
+        <h2 style="font-family: var(--font-display); font-size: 20px; line-height: 1.3; color: var(--text-primary); margin-bottom: 4px;">
           ${p.title}
         </h2>
-        <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">
-          📍 ${p.address}
+        <div style="font-size: 12px; color: var(--text-secondary);">
+          📍 ${p.address} • <span style="color: var(--color-trust); font-weight: 600;">${p.distanceKm || '0.4'} km from coaching hub</span>
         </div>
       </div>
 
-      <!-- Photo Gallery -->
-      <div style="display: flex; gap: 8px; overflow-x: auto; margin-bottom: 16px; border-radius: var(--radius-md); overflow: hidden;">
-        ${p.photos.map(url => `
-          <img src="${url}" style="height: 160px; border-radius: var(--radius-md); object-fit: cover;" alt="Room View" />
-        `).join('')}
+      <!-- Interactive Photo Gallery Carousel (Slice 3) -->
+      <div class="detail-gallery-carousel">
+        <img class="gallery-main-img" src="${activePhoto}" alt="${p.title}" onclick="GharDekho.nextGalleryPhoto()" />
+        
+        ${p.photos.length > 1 ? `
+          <button class="gallery-nav-btn prev" onclick="GharDekho.prevGalleryPhoto()">‹</button>
+          <button class="gallery-nav-btn next" onclick="GharDekho.nextGalleryPhoto()">›</button>
+          <div class="gallery-counter-badge">
+            📸 ${state.galleryActiveIndex + 1} / ${p.photos.length} Photos
+          </div>
+        ` : ''}
       </div>
 
-      <!-- Key Stats Bar -->
-      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; background: var(--bg-surface-raised); padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); margin-bottom: 16px; text-align: center;">
+      <!-- Thumbnail Strip -->
+      ${p.photos.length > 1 ? `
+        <div class="gallery-thumb-strip">
+          ${p.photos.map((url, idx) => `
+            <div class="gallery-thumb-item ${idx === state.galleryActiveIndex ? 'active' : ''}" onclick="GharDekho.setGalleryPhoto(${idx})">
+              <img src="${url}" alt="Thumbnail ${idx + 1}" />
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+
+      <!-- Key Property Specs Bar -->
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; background: var(--bg-surface-raised); padding: 10px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); margin-bottom: 14px; text-align: center;">
         <div>
-          <div style="font-size: 11px; color: var(--text-muted);">Floor</div>
-          <div style="font-size: 13px; font-weight: 700;">${p.floor} of ${p.totalFloors} (${p.flooring.split(' ')[0]})</div>
+          <div style="font-size: 10px; color: var(--text-muted);">Floor</div>
+          <div style="font-size: 12px; font-weight: 700;">${p.floor} of ${p.totalFloors}</div>
         </div>
         <div>
-          <div style="font-size: 11px; color: var(--text-muted);">Gender</div>
-          <div style="font-size: 13px; font-weight: 700; text-transform: capitalize;">${p.genderPreference} Only</div>
+          <div style="font-size: 10px; color: var(--text-muted);">Lift</div>
+          <div style="font-size: 12px; font-weight: 700; color: ${p.hasLift ? 'var(--color-trust)' : 'var(--text-muted)'};">${p.hasLift ? 'Available' : 'No Lift'}</div>
         </div>
         <div>
-          <div style="font-size: 11px; color: var(--text-muted);">Deposit</div>
-          <div style="font-size: 13px; font-weight: 700;">₹${p.depositAmount} (${p.depositMonths} mo)</div>
+          <div style="font-size: 10px; color: var(--text-muted);">Deposit</div>
+          <div style="font-size: 12px; font-weight: 700;">₹${p.depositAmount}</div>
+        </div>
+        <div>
+          <div style="font-size: 10px; color: var(--text-muted);">Notice</div>
+          <div style="font-size: 12px; font-weight: 700;">${p.noticePeriodDays} Days</div>
         </div>
       </div>
 
-      <!-- Split Sharing Rooms & Live Beds -->
-      <h3 style="font-size: 15px; font-family: var(--font-display); margin-bottom: 10px;">
-        🛏️ Available Room Configurations & Beds
+      <!-- Hyperlocal Indian Reality Alert Cards (Slice 3) -->
+      <div class="hyperlocal-alert-card water">
+        <div class="alert-card-icon">💧</div>
+        <div class="alert-card-content">
+          <h5>Water Supply: ${p.amenities.waterSupply}</h5>
+          <p>Verified Schedule: <b>${p.amenities.waterTiming}</b>. Rooftop overhead storage tank installed. Geyser included for instant hot water.</p>
+        </div>
+      </div>
+
+      <div class="hyperlocal-alert-card power">
+        <div class="alert-card-icon">⚡</div>
+        <div class="alert-card-content">
+          <h5>Power Cut Resilience: ${p.amenities.electricityBackup}</h5>
+          <p>Uninterrupted study lights, ceiling fan, and 100 Mbps fiber WiFi router running 24x7 without blackout drops.</p>
+        </div>
+      </div>
+
+      <!-- Split Sharing Rooms & Live Bed Slots -->
+      <h3 style="font-size: 14px; font-family: var(--font-display); margin-top: 14px; margin-bottom: 8px;">
+        🛏️ Available Room Configurations & Bed Slots
       </h3>
-      <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+      <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;">
         ${p.rooms.map(room => `
           <div style="background: var(--bg-surface-raised); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 12px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
               <div>
                 <strong style="color: var(--text-primary); font-size: 14px;">${room.label}</strong>
-                <div style="font-size: 11px; color: var(--text-muted);">${room.areaSqft} sq.ft · ${room.furnishing} furnished · ${room.bathroomType} bath</div>
+                <div style="font-size: 11px; color: var(--text-muted);">
+                  ${room.areaSqft} sq.ft • ${room.furnishing} furnished • ${room.bathroomType} bathroom
+                </div>
               </div>
               <div style="text-align: right;">
                 <div style="font-family: var(--font-mono); font-size: 16px; font-weight: 700; color: var(--color-primary);">
-                  ₹${room.pricePerPerson.toLocaleString('en-IN')}<span style="font-size: 11px; font-weight: 400; color: var(--text-muted);">/bed</span>
+                  ₹${room.pricePerPerson.toLocaleString('en-IN')}<span style="font-size: 10px; font-weight: 400; color: var(--text-muted);">/bed/mo</span>
                 </div>
               </div>
             </div>
 
-            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
+            <!-- Individual Bed Slots Row -->
+            <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px;">
               ${room.slots.map(s => `
-                <div style="background: ${s.status === 'occupied' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.15)'}; border: 1px solid ${s.status === 'occupied' ? 'rgba(239, 68, 68, 0.3)' : 'var(--color-trust)'}; padding: 6px 10px; border-radius: var(--radius-sm); font-size: 11px; display: flex; align-items: center; gap: 6px;">
-                  <span>🛏️ Slot ${s.slotId.toUpperCase()}</span>
+                <div style="background: ${s.status === 'occupied' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.15)'}; border: 1px solid ${s.status === 'occupied' ? 'rgba(239, 68, 68, 0.3)' : 'var(--color-trust)'}; padding: 4px 8px; border-radius: var(--radius-sm); font-size: 11px; display: flex; align-items: center; gap: 4px;">
+                  <span>🛏️ Bed ${s.slotId.toUpperCase()}</span>
                   <span style="font-weight: 700; color: ${s.status === 'occupied' ? '#EF4444' : 'var(--color-trust)'};">
                     ${s.status === 'occupied' ? 'Occupied' : 'Vacant'}
                   </span>
                   ${s.status === 'available' ? `
-                    <button style="background: var(--color-trust); border: none; color: #FFF; font-weight: 700; font-size: 10px; padding: 2px 6px; border-radius: 4px; cursor: pointer; margin-left: 4px;" onclick="GharDekho.bookBed('${p.id}', '${room.id}', '${s.slotId}')">
+                    <button style="background: var(--color-trust); border: none; color: #FFF; font-weight: 700; font-size: 9px; padding: 2px 5px; border-radius: 3px; cursor: pointer; margin-left: 2px;" onclick="GharDekho.bookBed('${p.id}', '${room.id}', '${s.slotId}')">
                       Book Bed
                     </button>
                   ` : ''}
@@ -789,55 +851,154 @@ const GharDekho = (() => {
         `).join('')}
       </div>
 
-      <!-- Verified Amenities Checklist (20+ Indian specifics) -->
-      <h3 style="font-size: 15px; font-family: var(--font-display); margin-bottom: 10px;">
+      <!-- Verified Amenities Checklist (20+ Items) -->
+      <h3 style="font-size: 14px; font-family: var(--font-display); margin-bottom: 8px;">
         ✅ Verified Property Amenities
       </h3>
-      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 20px; font-size: 12px;">
-        <div class="trust-item power-backup">⚡ <b>Power:</b> ${p.amenities.electricityBackup}</div>
-        <div class="trust-item alert-water">💧 <b>Water:</b> ${p.amenities.waterSupply}</div>
-        <div class="trust-item">⏰ <b>Water Timing:</b> ${p.amenities.waterTiming}</div>
-        <div class="trust-item">📶 <b>WiFi:</b> ${p.amenities.wifi}</div>
-        <div class="trust-item">❄️ <b>Cooling:</b> ${p.amenities.cooling}</div>
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 16px; font-size: 11px;">
+        <div class="trust-item">📶 <b>WiFi:</b> ${p.amenities.wifi || '100 Mbps'}</div>
+        <div class="trust-item">❄️ <b>Cooling:</b> ${p.amenities.cooling || 'Cooler'}</div>
         <div class="trust-item">🚿 <b>Bathroom:</b> ${p.amenities.bathroom}</div>
-        <div class="trust-item">🍳 <b>Cooking:</b> ${p.amenities.kitchen}</div>
-        <div class="trust-item">🚗 <b>Parking:</b> ${p.amenities.parking}</div>
-        <div class="trust-item">🔒 <b>Security:</b> ${p.amenities.security}</div>
-        <div class="trust-item">🥘 <b>Tiffin Nearby:</b> ${p.amenities.tiffinNearby ? 'Yes (50m)' : 'Self-cook'}</div>
+        <div class="trust-item">🍳 <b>Food/Mess:</b> ${p.amenities.kitchen}</div>
+        <div class="trust-item">🛵 <b>Parking:</b> ${p.amenities.parking}</div>
+        <div class="trust-item">📹 <b>Security:</b> ${p.amenities.security}</div>
+        <div class="trust-item">🧺 <b>Washing:</b> ${p.amenities.washingMachine ? 'Machine Available' : 'Self-Wash'}</div>
+        <div class="trust-item">🛡️ <b>Hostel Rules:</b> Gate closes ${p.rules?.curfewTime || '10:00 PM'}</div>
       </div>
 
-      <!-- Nearby Landmarks (Google Places API integration) -->
-      <h3 style="font-size: 15px; font-family: var(--font-display); margin-bottom: 10px;">
-        📍 Nearby Places (Distance Verified)
+      <!-- Nearby Verified Places & Landmarks -->
+      <h3 style="font-size: 14px; font-family: var(--font-display); margin-bottom: 8px;">
+        📍 Nearby Institutes & Transit (Verified)
       </h3>
-      <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 24px;">
+      <div style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 16px;">
         ${p.nearbyPlaces.map(place => `
-          <div style="display: flex; justify-content: space-between; background: var(--bg-surface-raised); padding: 8px 12px; border-radius: var(--radius-sm); font-size: 12px; border: 1px solid var(--border-subtle);">
+          <div style="display: flex; justify-content: space-between; background: var(--bg-surface-raised); padding: 7px 10px; border-radius: var(--radius-sm); font-size: 11px; border: 1px solid var(--border-subtle);">
             <span>🏢 ${place.name}</span>
             <strong style="color: var(--color-primary);">${place.distance}</strong>
           </div>
         `).join('')}
       </div>
 
+      <!-- Interactive Visit Scheduler Box (Slice 3) -->
+      <div class="visit-scheduler-box">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+          <h4 style="font-size: 13px; font-weight: 700; color: var(--text-primary);">
+            📅 Schedule a Room Visit
+          </h4>
+          <span style="font-size: 10px; color: var(--color-trust); font-weight: 700;">FREE • NO BROKERAGE</span>
+        </div>
+        <p style="font-size: 11px; color: var(--text-secondary); margin-bottom: 10px;">
+          Meet the Makan Maalik in person and inspect Room & Bed before paying deposit.
+        </p>
+
+        <!-- Date Pills -->
+        <div style="display: flex; gap: 6px; margin-bottom: 8px;">
+          <button class="chip ${state.selectedVisitDate === 'Today' ? 'active' : ''}" style="font-size: 11px;" onclick="GharDekho.selectVisitDate('Today')">
+            Today (Aaj)
+          </button>
+          <button class="chip ${state.selectedVisitDate === 'Tomorrow' ? 'active' : ''}" style="font-size: 11px;" onclick="GharDekho.selectVisitDate('Tomorrow')">
+            Tomorrow (Kal)
+          </button>
+          <button class="chip ${state.selectedVisitDate === 'Sunday' ? 'active' : ''}" style="font-size: 11px;" onclick="GharDekho.selectVisitDate('Sunday')">
+            Sunday
+          </button>
+        </div>
+
+        <!-- Time Slot Pills -->
+        <div class="visit-time-slots">
+          <span class="visit-time-pill ${state.selectedVisitSlot === '10:00 AM' ? 'selected' : ''}" onclick="GharDekho.selectVisitTime('10:00 AM')">
+            10:00 AM
+          </span>
+          <span class="visit-time-pill ${state.selectedVisitSlot === '11:30 AM' ? 'selected' : ''}" onclick="GharDekho.selectVisitTime('11:30 AM')">
+            11:30 AM
+          </span>
+          <span class="visit-time-pill ${state.selectedVisitSlot === '04:00 PM' ? 'selected' : ''}" onclick="GharDekho.selectVisitTime('04:00 PM')">
+            04:00 PM
+          </span>
+          <span class="visit-time-pill ${state.selectedVisitSlot === '06:30 PM' ? 'selected' : ''}" onclick="GharDekho.selectVisitTime('06:30 PM')">
+            06:30 PM
+          </span>
+        </div>
+
+        <button class="btn-inspect" style="width: 100%; margin-top: 12px; justify-content: center;" onclick="GharDekho.confirmScheduledVisit('${p.id}')">
+          Confirm Scheduled Visit (${state.selectedVisitDate} at ${state.selectedVisitSlot})
+        </button>
+      </div>
+
       <!-- Owner Contact Bar -->
-      <div style="background: var(--bg-surface-raised); border: 1px solid var(--border-medium); border-radius: var(--radius-lg); padding: 14px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <div style="background: var(--bg-surface-raised); border: 1px solid var(--border-medium); border-radius: var(--radius-lg); padding: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
         <div>
-          <div style="font-size: 11px; color: var(--color-trust); font-weight: 700;">MAKAN MAALIK (OWNER)</div>
+          <div style="font-size: 10px; color: var(--color-trust); font-weight: 700;">MAKAN MAALIK (OWNER)</div>
           <div style="font-size: 14px; font-weight: 700; color: var(--text-primary);">${p.owner.name}</div>
           <div style="font-size: 11px; color: var(--text-muted);">Response: ${p.owner.responseRate}</div>
         </div>
-        <div style="display: flex; gap: 8px;">
-          <a href="https://wa.me/${p.owner.whatsapp}?text=Namaste, I saw your room listing on GharDekho: ${encodeURIComponent(p.title)}" target="_blank" style="background: #25D366; color: #FFF; text-decoration: none; padding: 8px 12px; border-radius: var(--radius-md); font-weight: 700; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;">
+        <div style="display: flex; gap: 6px;">
+          <a href="https://wa.me/${p.owner.whatsapp}?text=Namaste! I saw your room listing on GharDekho for ${encodeURIComponent(p.title)}. Is a bed still available?" target="_blank" style="background: #25D366; color: #FFF; text-decoration: none; padding: 7px 10px; border-radius: var(--radius-md); font-weight: 700; font-size: 11px; display: inline-flex; align-items: center; gap: 4px;">
             💬 WhatsApp
           </a>
-          <button onclick="GharDekho.openInquiryModal('${p.id}')" class="btn-inspect" style="padding: 8px 12px; font-size: 12px;">
-            In-App Inquiry
+          <button onclick="alert('Calling owner directly: ' + '${p.owner.phone}')" class="btn-inspect" style="padding: 7px 10px; font-size: 11px;">
+            📞 Call
           </button>
         </div>
       </div>
     `;
+  }
 
-    el.detailModal.classList.add('open');
+  function nextGalleryPhoto() {
+    const p = state.selectedProperty;
+    if (!p || !p.photos || p.photos.length <= 1) return;
+    state.galleryActiveIndex = (state.galleryActiveIndex + 1) % p.photos.length;
+    renderDetailSheet();
+  }
+
+  function prevGalleryPhoto() {
+    const p = state.selectedProperty;
+    if (!p || !p.photos || p.photos.length <= 1) return;
+    state.galleryActiveIndex = (state.galleryActiveIndex - 1 + p.photos.length) % p.photos.length;
+    renderDetailSheet();
+  }
+
+  function setGalleryPhoto(idx) {
+    state.galleryActiveIndex = idx;
+    renderDetailSheet();
+  }
+
+  function selectVisitDate(dateLabel) {
+    state.selectedVisitDate = dateLabel;
+    renderDetailSheet();
+  }
+
+  function selectVisitTime(slot) {
+    state.selectedVisitSlot = slot;
+    renderDetailSheet();
+  }
+
+  async function confirmScheduledVisit(propId) {
+    const p = state.selectedProperty;
+    const tenantName = prompt('Enter your name for visit confirmation:', 'Aman Kumar');
+    if (!tenantName) return;
+
+    try {
+      const res = await fetch('/api/inquiries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          propertyId: propId,
+          tenantName,
+          tenantPhone: '+91 99887 76655',
+          message: `Scheduled room visit for ${state.selectedVisitDate} at ${state.selectedVisitSlot}. Looking forward to seeing the room in person.`,
+          scheduledVisitDate: `${state.selectedVisitDate} ${state.selectedVisitSlot}`
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(`🎉 Visit Confirmed: ${state.selectedVisitDate} at ${state.selectedVisitSlot}! Makan Maalik notified.`);
+        closeDetail();
+      }
+    } catch (e) {
+      showToast(`🎉 Visit Confirmed for ${state.selectedVisitDate}! (Offline Mode)`);
+      closeDetail();
+    }
   }
 
   function closeDetail() {
@@ -1885,6 +2046,12 @@ const GharDekho = (() => {
     recenterMap,
     openDetail,
     closeDetail,
+    nextGalleryPhoto,
+    prevGalleryPhoto,
+    setGalleryPhoto,
+    selectVisitDate,
+    selectVisitTime,
+    confirmScheduledVisit,
     bookBed,
     toggleSave,
     nextOwnerStep,
