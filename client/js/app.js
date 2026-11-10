@@ -19,6 +19,7 @@ const GharDekho = (() => {
     savedIds: new Set(['prop-kota-01']),
     properties: [],
     inquiries: [],
+    activeChatThreadId: null,
     selectedProperty: null,
     ownerStep: 1,
     ownerDraft: {
@@ -98,7 +99,7 @@ const GharDekho = (() => {
   // Initialize App
   async function init() {
     setupEventListeners();
-    await fetchProperties();
+    await Promise.all([fetchProperties(), fetchInquiries()]);
     render();
   }
 
@@ -1363,29 +1364,55 @@ const GharDekho = (() => {
     el.contentArea.innerHTML += grid;
   }
 
-  // Render Inquiries / Chat
+  // Render Inquiries / Chat (Slice 5 In-App Messaging Engine)
   function renderMessages() {
+    if (state.activeChatThreadId) {
+      renderChatRoom(state.activeChatThreadId);
+      return;
+    }
+
     el.contentArea.innerHTML = `
       <div style="margin-bottom: 16px;">
         <h2 style="font-family: var(--font-display); font-size: 20px; color: var(--text-primary);">
-          Messages & Scheduled Visits
+          Messages & Scheduled Visits (${state.inquiries.length})
         </h2>
-        <p style="font-size: 12px; color: var(--text-secondary);">In-app conversations with Makan Maaliks</p>
+        <p style="font-size: 12px; color: var(--text-secondary);">Direct in-app chat with verified Makan Maaliks</p>
       </div>
 
-      <div style="display: flex; flex-direction: column; gap: 10px;">
-        <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 14px;">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-            <strong style="color: var(--text-primary);">Ramesh Sharma (Talwandi PG)</strong>
-            <span style="font-size: 11px; color: var(--color-trust);">Confirmed Visit</span>
+      <div class="chat-threads-container">
+        ${state.inquiries.length === 0 ? `
+          <div style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+            <div style="font-size: 32px; margin-bottom: 8px;">💬</div>
+            <p>No messages yet. Explore rooms and tap "Chat with Owner" or "Schedule Visit" to start a conversation!</p>
           </div>
-          <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">
-            "Haan beta, Room 204 me 2 beds khali hai. Kal 11 baje aa jao dekhne."
-          </p>
-          <div style="font-size: 11px; color: var(--color-primary); font-weight: 600;">
-            📅 Scheduled Visit: Tomorrow, 11:00 AM
-          </div>
-        </div>
+        ` : state.inquiries.map(inq => {
+          const lastMsg = inq.messages && inq.messages.length > 0 ? inq.messages[inq.messages.length - 1] : null;
+          const hasUnread = (inq.unreadCountTenant || 0) > 0;
+          return `
+            <div class="chat-thread-card ${hasUnread ? 'has-unread' : ''}" onclick="GharDekho.openChatThread('${inq.id}')">
+              <div class="chat-thread-header">
+                <span class="chat-thread-title">🏠 ${inq.propertyTitle}</span>
+                <span class="chat-thread-time">${formatChatTime(inq.lastMessageAt || inq.createdAt)}</span>
+              </div>
+              <div style="font-size: 11px; color: var(--color-primary); margin-bottom: 4px; font-weight: 600;">
+                Owner: ${inq.ownerName}
+              </div>
+              <div class="chat-thread-snippet">
+                ${lastMsg ? (lastMsg.senderRole === 'tenant' ? 'You: ' : `${lastMsg.senderName.split(' ')[0]}: `) + lastMsg.text : inq.message}
+              </div>
+              <div class="chat-thread-footer">
+                <div>
+                  ${inq.scheduledVisitDate ? `
+                    <span class="badge-tag ${inq.status === 'confirmed' ? 'verified' : ''}" style="font-size: 10px;">
+                      📅 Visit: ${inq.scheduledVisitDate} (${inq.status})
+                    </span>
+                  ` : ''}
+                </div>
+                ${hasUnread ? `<span class="unread-badge-pill">${inq.unreadCountTenant} new</span>` : ''}
+              </div>
+            </div>
+          `;
+        }).join('')}
       </div>
     `;
   }
@@ -2223,43 +2250,286 @@ const GharDekho = (() => {
     render();
   }
 
-  // Render Owner Inquiries
+  // Render Owner Inquiries (Slice 5 In-App Chat for Owners)
   function renderOwnerInquiries() {
+    if (state.activeChatThreadId) {
+      renderChatRoom(state.activeChatThreadId);
+      return;
+    }
+
     el.contentArea.innerHTML = `
       <div style="margin-bottom: 16px;">
         <h2 style="font-family: var(--font-display); font-size: 20px; color: var(--text-primary);">
           Incoming Tenant Inquiries (${state.inquiries.length})
         </h2>
-        <p style="font-size: 12px; color: var(--text-secondary);">Direct leads from students and working professionals</p>
+        <p style="font-size: 12px; color: var(--text-secondary);">Direct chat leads and room visit requests from students</p>
       </div>
 
-      <div style="display: flex; flex-direction: column; gap: 12px;">
-        ${state.inquiries.map(inq => `
-          <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 14px;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-              <strong style="color: var(--text-primary); font-size: 15px;">${inq.tenantName}</strong>
-              <span class="badge-tag verified">New Lead</span>
-            </div>
-            <div style="font-size: 11px; color: var(--color-primary); margin-bottom: 6px;">
-              Property: ${inq.propertyTitle}
-            </div>
-            <p style="font-size: 13px; color: var(--text-secondary); background: var(--bg-surface-raised); padding: 8px 10px; border-radius: var(--radius-sm); margin-bottom: 10px;">
-              "${inq.message}"
-            </p>
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-size: 11px; color: var(--text-muted);">📞 ${inq.tenantPhone}</span>
-              <button class="btn-inspect" style="padding: 6px 12px; font-size: 11px;" onclick="alert('Calling tenant: ' + '${inq.tenantPhone}')">
-                Call Tenant
-              </button>
-            </div>
+      <div class="chat-threads-container">
+        ${state.inquiries.length === 0 ? `
+          <div style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+            <div style="font-size: 32px; margin-bottom: 8px;">📬</div>
+            <p>No new inquiries yet. As soon as students search and book visits, their leads will show up here.</p>
           </div>
-        `).join('')}
+        ` : state.inquiries.map(inq => {
+          const lastMsg = inq.messages && inq.messages.length > 0 ? inq.messages[inq.messages.length - 1] : null;
+          const hasUnread = (inq.unreadCountOwner || 0) > 0;
+          return `
+            <div class="chat-thread-card ${hasUnread ? 'has-unread' : ''}" onclick="GharDekho.openChatThread('${inq.id}')">
+              <div class="chat-thread-header">
+                <span class="chat-thread-title">👤 ${inq.tenantName}</span>
+                <span class="chat-thread-time">${formatChatTime(inq.lastMessageAt || inq.createdAt)}</span>
+              </div>
+              <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">
+                Property: <strong style="color: var(--text-primary);">${inq.propertyTitle}</strong>
+              </div>
+              <div class="chat-thread-snippet">
+                ${lastMsg ? (lastMsg.senderRole === 'owner' ? 'You: ' : `${lastMsg.senderName.split(' ')[0]}: `) + lastMsg.text : inq.message}
+              </div>
+              <div class="chat-thread-footer">
+                <div>
+                  ${inq.scheduledVisitDate ? `
+                    <span class="badge-tag ${inq.status === 'confirmed' ? 'verified' : ''}" style="font-size: 10px;">
+                      📅 Visit: ${inq.scheduledVisitDate} (${inq.status})
+                    </span>
+                  ` : `
+                    <span style="font-size: 10px; color: var(--text-muted);">📞 ${inq.tenantPhone}</span>
+                  `}
+                </div>
+                ${hasUnread ? `<span class="unread-badge-pill">${inq.unreadCountOwner} new</span>` : ''}
+              </div>
+            </div>
+          `;
+        }).join('')}
       </div>
     `;
   }
 
-  // Render Bottom Nav Tabs based on Role
+  // Slice 5: Active In-App Chat Room
+  function renderChatRoom(threadId) {
+    const thread = state.inquiries.find(i => i.id === threadId);
+    if (!thread) {
+      state.activeChatThreadId = null;
+      render();
+      return;
+    }
+
+    const isOwner = state.currentRole === 'owner';
+    const otherPartyName = isOwner ? thread.tenantName : thread.ownerName;
+    const otherPartyPhone = isOwner ? thread.tenantPhone : thread.ownerPhone;
+    const otherPartyRole = isOwner ? 'Student / Tenant' : 'Property Owner (Makan Maalik)';
+
+    const quickReplies = isOwner ? [
+      "Yes, the bed is available for immediate move-in.",
+      "Please bring your student ID card for visitor entry.",
+      "Yes, 24-hr generator power backup is fully active.",
+      "Visit confirmed! I will be waiting at the lobby."
+    ] : [
+      "Is the study desk & ergonomic chair included?",
+      "How is the WiFi speed for online live lectures?",
+      "Can I come for physical room visit today at 5 PM?",
+      "What is the security deposit & notice period?"
+    ];
+
+    el.contentArea.innerHTML = `
+      <div class="chat-room-wrapper">
+        <!-- Chat Header Bar -->
+        <div class="chat-header-bar">
+          <button class="chat-back-btn" onclick="GharDekho.closeChatThread()" title="Back to messages">
+            ‹
+          </button>
+          <div class="chat-header-info">
+            <div class="chat-header-name">${otherPartyName}</div>
+            <div class="chat-header-status">● Active • ${otherPartyRole}</div>
+          </div>
+          <button class="chip" style="font-size: 11px; padding: 4px 8px;" onclick="alert('Calling ${otherPartyName}: ${otherPartyPhone}')">
+            📞 Call
+          </button>
+        </div>
+
+        <!-- Scheduled Visit Banner (if any) -->
+        ${thread.scheduledVisitDate ? `
+          <div class="chat-visit-alert">
+            <div>
+              <strong>📅 Visit: ${thread.scheduledVisitDate}</strong>
+              <span style="margin-left: 6px; font-weight: 700; color: ${thread.status === 'confirmed' ? 'var(--color-trust)' : 'var(--color-warning)'};">
+                [${thread.status.toUpperCase()}]
+              </span>
+            </div>
+            ${isOwner && thread.status !== 'confirmed' ? `
+              <button style="background: var(--color-trust); border: none; color: #FFF; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 4px; cursor: pointer;" onclick="GharDekho.updateChatVisitStatus('${thread.id}', 'confirmed')">
+                Confirm Visit
+              </button>
+            ` : ''}
+          </div>
+        ` : ''}
+
+        <!-- Scrollable Messages Area -->
+        <div class="chat-messages-area" id="chatMessagesArea">
+          ${(thread.messages || []).map(m => {
+            if (m.senderRole === 'system') {
+              return `
+                <div class="chat-bubble system">
+                  ${m.text}
+                </div>
+              `;
+            }
+
+            const isMine = m.senderRole === state.currentRole;
+            return `
+              <div class="chat-bubble ${isMine ? 'tenant' : 'owner'}">
+                ${!isMine ? `<div style="font-size: 10px; font-weight: 700; color: var(--color-primary); margin-bottom: 2px;">${m.senderName}</div>` : ''}
+                <div>${m.text}</div>
+                <div class="msg-meta-row">
+                  <span>${formatChatTime(m.timestamp)}</span>
+                  ${isMine ? `<span class="msg-ticks">${m.isRead ? '✓✓' : '✓'}</span>` : ''}
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+
+        <!-- Student / Owner Quick Reply Chips -->
+        <div class="chat-quick-replies">
+          ${quickReplies.map(reply => `
+            <button class="quick-reply-chip" onclick="GharDekho.sendQuickReply('${thread.id}', '${reply.replace(/'/g, "\\'")}')">
+              ${reply}
+            </button>
+          `).join('')}
+        </div>
+
+        <!-- Chat Input Bar -->
+        <div class="chat-input-bar">
+          <input 
+            type="text" 
+            id="chatTextInput" 
+            class="chat-text-input" 
+            placeholder="Type a message to ${otherPartyName.split(' ')[0]}..." 
+            onkeydown="if(event.key==='Enter') GharDekho.sendChatMessage('${thread.id}')"
+          />
+          <button class="chat-send-btn" onclick="GharDekho.sendChatMessage('${thread.id}')" title="Send message">
+            ➤
+          </button>
+        </div>
+      </div>
+    `;
+
+    setTimeout(() => {
+      const area = document.getElementById('chatMessagesArea');
+      if (area) area.scrollTop = area.scrollHeight;
+    }, 50);
+  }
+
+  function formatChatTime(isoString) {
+    if (!isoString) return '';
+    try {
+      const d = new Date(isoString);
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch (e) {
+      return '';
+    }
+  }
+
+  async function openChatThread(threadId) {
+    state.activeChatThreadId = threadId;
+    try {
+      const res = await fetch(`/api/inquiries/${threadId}?reader=${state.currentRole}`);
+      const data = await res.json();
+      if (data.success && data.inquiry) {
+        const idx = state.inquiries.findIndex(i => i.id === threadId);
+        if (idx !== -1) {
+          state.inquiries[idx] = data.inquiry;
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to mark read', e);
+    }
+    renderNav();
+    render();
+  }
+
+  function closeChatThread() {
+    state.activeChatThreadId = null;
+    renderNav();
+    render();
+  }
+
+  async function sendChatMessage(threadId) {
+    const input = document.getElementById('chatTextInput');
+    if (!input || !input.value.trim()) return;
+    const text = input.value.trim();
+    input.value = '';
+
+    await submitChatMessage(threadId, text);
+  }
+
+  async function sendQuickReply(threadId, text) {
+    await submitChatMessage(threadId, text);
+  }
+
+  async function submitChatMessage(threadId, text) {
+    const thread = state.inquiries.find(i => i.id === threadId);
+    if (!thread) return;
+
+    try {
+      const res = await fetch(`/api/inquiries/${threadId}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          senderRole: state.currentRole,
+          senderName: state.currentRole === 'owner' ? thread.ownerName : thread.tenantName,
+          text
+        })
+      });
+      const data = await res.json();
+      if (data.success && data.inquiry) {
+        const idx = state.inquiries.findIndex(i => i.id === threadId);
+        if (idx !== -1) {
+          state.inquiries[idx] = data.inquiry;
+        }
+        renderChatRoom(threadId);
+      }
+    } catch (e) {
+      const localMsg = {
+        id: `msg-${Date.now()}`,
+        senderRole: state.currentRole,
+        senderName: state.currentRole === 'owner' ? thread.ownerName : thread.tenantName,
+        text,
+        timestamp: new Date().toISOString(),
+        isRead: false
+      };
+      if (!thread.messages) thread.messages = [];
+      thread.messages.push(localMsg);
+      renderChatRoom(threadId);
+    }
+  }
+
+  async function updateChatVisitStatus(threadId, status) {
+    try {
+      const res = await fetch(`/api/inquiries/${threadId}/visit-status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+      const data = await res.json();
+      if (data.success && data.inquiry) {
+        const idx = state.inquiries.findIndex(i => i.id === threadId);
+        if (idx !== -1) {
+          state.inquiries[idx] = data.inquiry;
+        }
+        showToast(data.message);
+        renderChatRoom(threadId);
+      }
+    } catch (e) {
+      showToast(`Visit status updated (Offline Mode)`);
+    }
+  }
+
+  // Render Bottom Nav Tabs based on Role (Slice 5 Live Unread Counters)
   function renderNav() {
+    const tenantUnread = state.inquiries ? state.inquiries.reduce((acc, i) => acc + (i.unreadCountTenant || 0), 0) : 0;
+    const ownerUnread = state.inquiries ? state.inquiries.reduce((acc, i) => acc + (i.unreadCountOwner || 0), 0) : 0;
+
     if (state.currentRole === 'tenant') {
       el.bottomNav.innerHTML = `
         <button class="nav-item ${state.activeTab === 'khojo' ? 'active' : ''}" onclick="GharDekho.setTab('khojo')">
@@ -2275,7 +2545,10 @@ const GharDekho = (() => {
           <span>Saved</span>
         </button>
         <button class="nav-item ${state.activeTab === 'messages' ? 'active' : ''}" onclick="GharDekho.setTab('messages')">
-          <span class="nav-icon">💬</span>
+          <span class="nav-icon" style="position: relative;">
+            💬
+            ${tenantUnread > 0 ? `<span style="position: absolute; top: -4px; right: -8px; background: var(--color-primary); color: #FFF; font-size: 9px; font-weight: 700; border-radius: 10px; padding: 1px 5px; line-height: 1;">${tenantUnread}</span>` : ''}
+          </span>
           <span>Chat</span>
         </button>
         <button class="nav-item ${state.activeTab === 'profile' ? 'active' : ''}" onclick="GharDekho.setTab('profile')">
@@ -2294,7 +2567,10 @@ const GharDekho = (() => {
           <span>Add Room</span>
         </button>
         <button class="nav-item ${state.activeTab === 'owner_inquiries' ? 'active' : ''}" onclick="GharDekho.setTab('owner_inquiries')">
-          <span class="nav-icon">💬</span>
+          <span class="nav-icon" style="position: relative;">
+            💬
+            ${ownerUnread > 0 ? `<span style="position: absolute; top: -4px; right: -8px; background: var(--color-primary); color: #FFF; font-size: 9px; font-weight: 700; border-radius: 10px; padding: 1px 5px; line-height: 1;">${ownerUnread}</span>` : ''}
+          </span>
           <span>Inquiries</span>
         </button>
         <button class="nav-item ${state.activeTab === 'owner_profile' ? 'active' : ''}" onclick="GharDekho.setTab('owner_profile')">
@@ -2335,24 +2611,34 @@ const GharDekho = (() => {
     showToast('Filters reset to default');
   }
 
-  function openInquiryModal(propId) {
+  async function openInquiryModal(propId) {
     const p = state.properties.find(item => item.id === propId);
     const msg = prompt(`Send inquiry to ${p.owner.name}:`, "Namaste Sir, I am interested in this room. Can I schedule a visit?");
     if (!msg) return;
 
-    fetch('/api/inquiries', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        propertyId: propId,
-        tenantName: "Pooja Sharma",
-        tenantPhone: "+91 99887 76655",
-        message: msg
-      })
-    }).then(() => {
-      showToast('Inquiry sent! Owner will reply within 15 mins.');
+    try {
+      const res = await fetch('/api/inquiries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          propertyId: propId,
+          tenantName: "Aman Kumar",
+          tenantPhone: "+91 99887 76655",
+          message: msg
+        })
+      });
+      const data = await res.json();
+      if (data.success && data.inquiry) {
+        showToast('Inquiry sent! Opening chat with owner...');
+        closeDetail();
+        await fetchInquiries();
+        state.activeTab = state.currentRole === 'owner' ? 'owner_inquiries' : 'messages';
+        openChatThread(data.inquiry.id);
+      }
+    } catch (e) {
+      showToast('Inquiry sent locally');
       closeDetail();
-    });
+    }
   }
 
   function toggleViewport() {
@@ -2390,6 +2676,11 @@ const GharDekho = (() => {
     updateSlotStatus,
     assignWaitlistToBed,
     removeWaitlistCandidate,
+    openChatThread,
+    closeChatThread,
+    sendChatMessage,
+    sendQuickReply,
+    updateChatVisitStatus,
     toggleSave,
     nextOwnerStep,
     prevOwnerStep,

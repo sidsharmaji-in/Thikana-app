@@ -16,12 +16,51 @@ let inquiries = [
     id: "inq-101",
     propertyId: "prop-kota-01",
     propertyTitle: "Saraswati PG & Study Rooms (Boys)",
+    ownerId: "owner-sharma",
+    ownerName: "Ramesh Sharma (Ex-Teacher)",
+    ownerPhone: "+91 98290 XXXXX",
     tenantName: "Vikas Meena",
     tenantPhone: "+91 88990 11223",
-    message: "Namaste Sir, I am preparing for NEET 2027 at Allen. Is slot 3 still available in Room 204? Can I visit tomorrow at 11 AM?",
-    scheduledVisitDate: "2026-11-12T11:00:00Z",
-    status: "pending",
-    createdAt: new Date().toISOString()
+    status: "confirmed",
+    scheduledVisitDate: "Tomorrow, 11:00 AM",
+    createdAt: "2026-11-10T10:00:00.000Z",
+    lastMessageAt: "2026-11-10T10:15:00.000Z",
+    unreadCountTenant: 1,
+    unreadCountOwner: 0,
+    messages: [
+      {
+        id: "msg-101-1",
+        senderRole: "tenant",
+        senderName: "Vikas Meena",
+        text: "Namaste Sir, I am preparing for NEET 2027 at Allen. Is slot 3 still available in Room 204? Can I visit tomorrow at 11 AM?",
+        timestamp: "2026-11-10T10:00:00.000Z",
+        isRead: true
+      },
+      {
+        id: "msg-101-2",
+        senderRole: "owner",
+        senderName: "Ramesh Sharma",
+        text: "Haan Vikas beta, slot 3 is vacant. You can visit at 11 AM tomorrow. I am on the premises to show you the study desk and room.",
+        timestamp: "2026-11-10T10:08:00.000Z",
+        isRead: true
+      },
+      {
+        id: "msg-101-3",
+        senderRole: "system",
+        senderName: "GharDekho Concierge",
+        text: "📅 Room Visit Confirmed for Tomorrow at 11:00 AM. Location: Plot 42-B, Sector 2, Talwandi.",
+        timestamp: "2026-11-10T10:10:00.000Z",
+        isRead: true
+      },
+      {
+        id: "msg-101-4",
+        senderRole: "owner",
+        senderName: "Ramesh Sharma",
+        text: "Also please bring your Allen ID card along for visitor entry register.",
+        timestamp: "2026-11-10T10:15:00.000Z",
+        isRead: false
+      }
+    ]
   }
 ];
 let reviews = [];
@@ -415,30 +454,188 @@ app.post('/api/properties/:id/rooms/:roomId/waitlist/:waitlistId/assign', (req, 
   });
 });
 
-// 5. POST /api/inquiries - Tenant sends contact / chat lead
+// 5. POST /api/inquiries - Tenant sends contact / chat lead (Slice 5 In-App Chat)
 app.post('/api/inquiries', (req, res) => {
   const { propertyId, tenantName, tenantPhone, message, scheduledVisitDate } = req.body;
   const property = properties.find(p => p.id === propertyId);
   
+  const now = new Date().toISOString();
+  const initialMessages = [];
+
+  if (message && message.trim()) {
+    initialMessages.push({
+      id: `msg-${Date.now()}-1`,
+      senderRole: 'tenant',
+      senderName: tenantName || 'Tenant',
+      text: message.trim(),
+      timestamp: now,
+      isRead: false
+    });
+  }
+
+  if (scheduledVisitDate) {
+    initialMessages.push({
+      id: `msg-${Date.now()}-2`,
+      senderRole: 'system',
+      senderName: 'GharDekho Concierge',
+      text: `📅 Visit Requested for ${scheduledVisitDate}. Waiting for Makan Maalik confirmation.`,
+      timestamp: now,
+      isRead: false
+    });
+  }
+
   const inquiry = {
     id: `inq-${Date.now()}`,
     propertyId,
     propertyTitle: property ? property.title : 'Rental Property',
-    tenantName,
-    tenantPhone,
-    message,
+    ownerId: property?.owner?.id || 'owner-default',
+    ownerName: property?.owner?.name || 'Property Owner',
+    ownerPhone: property?.owner?.phone || '+91 98000 00000',
+    tenantName: tenantName || 'Interested Tenant',
+    tenantPhone: tenantPhone || '',
+    message: message || '',
     scheduledVisitDate: scheduledVisitDate || null,
     status: 'pending',
-    createdAt: new Date().toISOString()
+    createdAt: now,
+    lastMessageAt: now,
+    unreadCountTenant: 0,
+    unreadCountOwner: initialMessages.length > 0 ? 1 : 0,
+    messages: initialMessages
   };
 
   inquiries.unshift(inquiry);
-  res.status(201).json({ success: true, inquiry });
+  res.status(201).json({ success: true, inquiry, message: 'Inquiry and chat thread created!' });
 });
 
-// 6. GET /api/inquiries - Owner retrieves inquiries
+// 6. GET /api/inquiries - List inquiries / chat threads
 app.get('/api/inquiries', (req, res) => {
-  res.json({ success: true, count: inquiries.length, inquiries });
+  const { role, phone } = req.query;
+  let results = [...inquiries];
+
+  if (phone) {
+    results = results.filter(inq => inq.tenantPhone === phone || inq.ownerPhone.includes(phone));
+  }
+
+  res.json({ success: true, count: results.length, inquiries: results });
+});
+
+// 6a. GET /api/inquiries/:id - Single chat thread with messages
+app.get('/api/inquiries/:id', (req, res) => {
+  const inquiry = inquiries.find(inq => inq.id === req.params.id);
+  if (!inquiry) return res.status(404).json({ success: false, message: 'Inquiry thread not found' });
+
+  // Mark as read based on reader role
+  const { reader } = req.query;
+  if (reader === 'tenant') {
+    inquiry.unreadCountTenant = 0;
+    if (inquiry.messages) {
+      inquiry.messages.forEach(m => {
+        if (m.senderRole !== 'tenant') m.isRead = true;
+      });
+    }
+  } else if (reader === 'owner') {
+    inquiry.unreadCountOwner = 0;
+    if (inquiry.messages) {
+      inquiry.messages.forEach(m => {
+        if (m.senderRole !== 'owner') m.isRead = true;
+      });
+    }
+  }
+
+  res.json({ success: true, inquiry });
+});
+
+// 6b. POST /api/inquiries/:id/messages - Send message in chat thread
+app.post('/api/inquiries/:id/messages', (req, res) => {
+  const { senderRole, senderName, text } = req.body;
+  const inquiry = inquiries.find(inq => inq.id === req.params.id);
+  
+  if (!inquiry) return res.status(404).json({ success: false, message: 'Inquiry thread not found' });
+  if (!text || !text.trim()) {
+    return res.status(400).json({ success: false, message: 'Message text cannot be empty' });
+  }
+
+  const role = senderRole === 'owner' ? 'owner' : 'tenant';
+  const name = senderName || (role === 'owner' ? inquiry.ownerName : inquiry.tenantName);
+  const now = new Date().toISOString();
+
+  const newMsg = {
+    id: `msg-${Date.now()}`,
+    senderRole: role,
+    senderName: name,
+    text: text.trim(),
+    timestamp: now,
+    isRead: false
+  };
+
+  if (!inquiry.messages) inquiry.messages = [];
+  inquiry.messages.push(newMsg);
+  inquiry.lastMessageAt = now;
+
+  // Increment unread count for recipient
+  if (role === 'tenant') {
+    inquiry.unreadCountOwner = (inquiry.unreadCountOwner || 0) + 1;
+  } else {
+    inquiry.unreadCountTenant = (inquiry.unreadCountTenant || 0) + 1;
+  }
+
+  res.status(201).json({
+    success: true,
+    message: newMsg,
+    inquiry
+  });
+});
+
+// 6c. PUT /api/inquiries/:id/visit-status - Update scheduled room visit status
+app.put('/api/inquiries/:id/visit-status', (req, res) => {
+  const { status, scheduledVisitDate, note } = req.body;
+  const inquiry = inquiries.find(inq => inq.id === req.params.id);
+  
+  if (!inquiry) return res.status(404).json({ success: false, message: 'Inquiry thread not found' });
+  
+  const validStatuses = ['confirmed', 'rescheduled', 'cancelled', 'visited', 'pending'];
+  if (!status || !validStatuses.includes(status)) {
+    return res.status(400).json({ success: false, message: `Status must be one of: ${validStatuses.join(', ')}` });
+  }
+
+  inquiry.status = status;
+  if (scheduledVisitDate) {
+    inquiry.scheduledVisitDate = scheduledVisitDate;
+  }
+
+  const now = new Date().toISOString();
+  let statusText = '';
+  if (status === 'confirmed') {
+    statusText = `📅 Room Visit Confirmed for ${inquiry.scheduledVisitDate || 'the requested time'}! ${note ? `Note: ${note}` : ''}`;
+  } else if (status === 'rescheduled') {
+    statusText = `🔄 Visit Rescheduled to ${scheduledVisitDate || inquiry.scheduledVisitDate}.${note ? ` Note: ${note}` : ''}`;
+  } else if (status === 'cancelled') {
+    statusText = `❌ Visit Cancelled.${note ? ` Reason: ${note}` : ''}`;
+  } else if (status === 'visited') {
+    statusText = `✅ Room Inspection Completed. Hope you liked the property!`;
+  } else {
+    statusText = `⏳ Visit status updated to ${status}.`;
+  }
+
+  const sysMsg = {
+    id: `msg-${Date.now()}`,
+    senderRole: 'system',
+    senderName: 'GharDekho Concierge',
+    text: statusText.trim(),
+    timestamp: now,
+    isRead: true
+  };
+
+  if (!inquiry.messages) inquiry.messages = [];
+  inquiry.messages.push(sysMsg);
+  inquiry.lastMessageAt = now;
+
+  res.json({
+    success: true,
+    message: statusText.trim(),
+    status: inquiry.status,
+    inquiry
+  });
 });
 
 // 7. GET /api/stats - Platform overview stats

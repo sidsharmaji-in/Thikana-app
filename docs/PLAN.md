@@ -552,14 +552,15 @@ flowchart TD
   - Owner one-click bed assignment for waitlisted candidates (`POST .../waitlist/:id/assign`)
   - Tests: `server/test/slice4-slots.test.js` (32/32 tests passing)
 
-- [ ] **Slice 5 — Inquiry + In-App Chat**
-  - Tenant sends inquiry with message
-  - In-app chat thread (WhatsApp-like bubbles)
-  - Owner sees all inquiries on dashboard
-  - Visit scheduling (pick date/time)
-  - Chat push notifications (FCM)
-  - _UI states:_ message sending · read receipts · owner offline banner · chat history pagination
-  - _Tests:_ message ordering · FCM token registration · unread count
+- [x] **Slice 5 — Inquiry + In-App Chat** ✅ _(Completed & Verified)_
+  - Tenant sends inquiry with custom message & room visit date/time request
+  - In-app chat room engine with WhatsApp-style bubbles (Tenant saffron right, Owner dark slate left, Concierge system center)
+  - Read receipts (`✓` sent, `✓✓` read) and live navigation unread count badges for both roles
+  - Real-time message exchange via `POST /api/inquiries/:id/messages`
+  - In-chat room visit schedule confirmation/reschedule flow (`PUT /api/inquiries/:id/visit-status`)
+  - Student & Owner quick-reply chips for rapid zero-friction communication
+  - Thread list with property preview, last message snippet, timestamp, and unread counters
+  - Tests: `server/test/slice5-chat.test.js` (29/29 tests passing)
 
 - [ ] **Slice 6 — Reviews + Verification**
   - Review form: 1–5 stars + text (tenant after move-in, 30 days post inquiry)

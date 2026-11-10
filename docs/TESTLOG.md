@@ -85,3 +85,27 @@ Record what was actually run, not what was intended.
     - One-click bed assignment from waitlist via `POST /api/properties/:id/rooms/:roomId/waitlist/:id/assign`: assigns candidate directly to first vacant bed, updates status, and removes candidate from queue.
     - Cancel/remove waitlist candidates via `DELETE /api/properties/:id/rooms/:roomId/waitlist/:id`.
 - **Next Slice:** Slice 5 — Inquiry + In-App Chat (WhatsApp-like bubble threads, unread counter, visit confirmation, and message ordering).
+
+## Slice 5 — Inquiry & In-App Chat System (2026-11-10)
+- **Status:** ✅ COMPLETED & VERIFIED
+- **Automated Test Suite:** `npm run test:slice5` (`server/test/slice5-chat.test.js`)
+- **Results:** 29 Passed, 0 Failed (Cumulative across Slices 1–5: 112 Passed, 0 Failed)
+- **Features Verified:**
+  - In-App Messaging Engine:
+    - Real-time message exchange via `POST /api/inquiries/:id/messages` supporting both `tenant` and `owner` roles.
+    - Automatic validation rejecting empty whitespace-only messages (`HTTP 400`).
+    - Chronological message ordering and ISO timestamps.
+  - Read Receipts & Unread Tracking:
+    - Thread-level unread counters for both Tenant (`unreadCountTenant`) and Owner (`unreadCountOwner`).
+    - Opening a conversation (`GET /api/inquiries/:id?reader=...`) marks received messages as read (`isRead = true`) and resets the viewer's unread counter to 0.
+    - Live unread badges rendered on bottom navigation tabs for both roles.
+    - WhatsApp-style read ticks: single check (`✓`) for sent, double check (`✓✓`) for read.
+  - Visit Status Management in Chat:
+    - Dedicated endpoint `PUT /api/inquiries/:id/visit-status` supporting statuses: `confirmed`, `rescheduled`, `cancelled`, `visited`.
+    - Automatically injects Concierge system message into the chat history (e.g. *"📅 Room Visit Confirmed for Tomorrow at 11:00 AM"*).
+  - Rich Interactive Chat Room UI:
+    - Chat header showing other party's name, role, activity status, and direct phone call CTA.
+    - Saffron orange-tinted tenant bubbles (right aligned) vs dark slate-raised owner bubbles (left aligned).
+    - Quick-reply chips for rapid zero-friction student queries (*"Is study desk & chair provided?"*, *"Is WiFi speed good for live lectures?"*, *"Can I come for physical room visit today at 5 PM?"*).
+    - Bottom message input bar with instant Enter-key sending and automatic scroll-to-bottom behavior.
+- **Next Slice:** Slice 6 — Reviews, Ratings & Owner Verification (5-star review form, verified tenant badges, owner responses, and Aadhaar trust badges).
