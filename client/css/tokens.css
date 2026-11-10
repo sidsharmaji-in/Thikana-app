@@ -1,81 +1,93 @@
 /* =======================================================
-   GharDekho Design System — UI/UX PRO MAX Specification
-   Archetype: Multi-Palette Architectural Studio
-   Default Theme: Midnight Cyber-Indigo Luxe (#6366F1 / #080A11)
-   High-contrast, WCAG AA Compliant, Zero-Jank Fluid Scaling
+   GharDekho Design System — Natural, Professional & Premium
+   Inspired by Airbnb, Zillow, and Stanza Living
+   Clean, Human, High-Legibility, Zero AI-Jank
    ======================================================= */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap');
 
-/* =======================================================
-   1. DEFAULT THEME: MIDNIGHT CYBER-INDIGO LUXE
-   (Ultra-modern, stylish & professional high-tech aesthetic)
-   ======================================================= */
-:root, [data-theme="indigo"] {
-  /* Surfaces & Canvas */
-  --bg-canvas: #07090E;             /* Layer 0: Pure Deep Void Canvas */
-  --bg-surface: #0E1320;            /* Layer 1: Titanium Slate Container */
-  --bg-surface-elevated: #141C2E;   /* Layer 2: Elevated Card / Module */
-  --bg-surface-hover: #1C2740;      /* Layer 2.5: Interactive Hover State */
-  --bg-surface-active: #233152;     /* Layer 2.8: Active Click State */
-  --bg-glass: rgba(14, 19, 32, 0.88); /* Layer 3: Glassmorphism Bar */
-  --bg-glass-card: rgba(20, 28, 46, 0.78);
+:root {
+  /* =========================================
+     SURFACES & CANVAS (Natural Light Canvas)
+     ========================================= */
+  --bg-canvas: #F8FAFC;            /* Clean off-white studio background */
+  --bg-surface: #FFFFFF;           /* Crisp pure white container */
+  --bg-surface-elevated: #FFFFFF;  /* Cards on white surface */
+  --bg-surface-subtle: #F1F5F9;    /* Light slate background for chips/tags */
+  --bg-surface-hover: #F8FAFC;     /* Hover state for cards/buttons */
+  --bg-surface-active: #E2E8F0;    /* Pressed state */
+  --bg-glass: rgba(255, 255, 255, 0.94);
+  --bg-glass-card: rgba(255, 255, 255, 0.98);
 
-  /* Hairline Borders & Glass Dividers */
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-medium: rgba(255, 255, 255, 0.15);
-  --border-strong: rgba(255, 255, 255, 0.24);
-  --border-focus: #6366F1;
-  --border-accent-glow: rgba(99, 102, 241, 0.45);
+  /* =========================================
+     HAIRLINE BORDERS (Crisp, Real, Physical)
+     ========================================= */
+  --border-subtle: #E2E8F0;        /* 1px clean separator */
+  --border-medium: #CBD5E1;        /* Form input border */
+  --border-strong: #94A3B8;        /* Active focus indicator */
+  --border-focus: #0F172A;         /* Slate 900 tactile focus */
+  --border-accent-glow: #E2E8F0;
 
-  /* Brand Primary: Electric Indigo -> Ultra Violet -> Cyan */
-  --color-primary: #6366F1;
-  --color-primary-light: #818CF8;
-  --color-primary-hover: #4F46E5;
-  --color-primary-active: #4338CA;
-  --color-primary-subtle: rgba(99, 102, 241, 0.14);
-  --color-primary-glow: rgba(99, 102, 241, 0.4);
-  --gradient-primary: linear-gradient(135deg, #6366F1 0%, #7C3AED 50%, #06B6D4 100%);
-  --gradient-card-overlay: linear-gradient(180deg, rgba(7, 9, 14, 0) 30%, rgba(7, 9, 14, 0.95) 100%);
+  /* =========================================
+     BRAND ACCENTS (Warm, Trustworthy, Human)
+     ========================================= */
+  /* Primary: Airbnb/Stanza Living Coral-Rose — warm, welcoming, modern */
+  --color-primary: #E11D48;
+  --color-primary-light: #F43F5E;
+  --color-primary-hover: #BE123C;
+  --color-primary-active: #9F1239;
+  --color-primary-subtle: #FFF1F2;  /* Soft rose tint */
+  --color-primary-glow: rgba(225, 29, 72, 0.15);
+  --gradient-primary: linear-gradient(135deg, #E11D48 0%, #F43F5E 100%);
+  --gradient-card-overlay: linear-gradient(180deg, rgba(0, 0, 0, 0) 40%, rgba(0, 0, 0, 0.75) 100%);
   --on-primary: #FFFFFF;
 
-  /* Trust & Functional Data Accents */
-  --color-trust: #10B981;          /* Emerald Green: Verified Resident / Available Bed */
-  --color-trust-hover: #059669;
-  --color-trust-subtle: rgba(16, 185, 129, 0.14);
-  --color-trust-glow: rgba(16, 185, 129, 0.35);
+  /* Trust & Verification: Natural Forest Green */
+  --color-trust: #059669;          /* Emerald / Forest */
+  --color-trust-hover: #047857;
+  --color-trust-subtle: #ECFDF5;   /* Soft mint background */
+  --color-trust-text: #065F46;
 
-  --color-student: #A855F7;        /* Electric Violet: Student Deals / Vibe Score */
-  --color-student-subtle: rgba(168, 85, 247, 0.14);
-  --color-student-glow: rgba(168, 85, 247, 0.35);
+  /* Student & Co-Living: Soft Indigo/Violet */
+  --color-student: #6366F1;
+  --color-student-subtle: #EEF2FF;
+  --color-student-text: #4338CA;
 
-  --color-warning: #F59E0B;        /* Amber Gold: Timing alerts / Jal schedules */
-  --color-warning-subtle: rgba(245, 158, 11, 0.14);
+  /* Alerts & Reality Checks: Natural Amber */
+  --color-warning: #D97706;
+  --color-warning-subtle: #FFFBEB;
+  --color-warning-text: #92400E;
 
-  --color-danger: #F43F5E;         /* Rose Red: Curfews / Occupied / Errors */
-  --color-danger-subtle: rgba(244, 63, 94, 0.14);
+  /* Urgent / Occupied: Muted Crimson */
+  --color-danger: #DC2626;
+  --color-danger-subtle: #FEF2F2;
+  --color-danger-text: #991B1B;
 
-  /* High-Legibility Typography Colors */
-  --text-primary: #F8FAFC;
-  --text-secondary: #94A3B8;
-  --text-muted: #64748B;
-  --text-dim: #475569;
-  --text-inverse: #07090E;
+  /* =========================================
+     TYPOGRAPHY (High-Legibility Neutral Ink)
+     ========================================= */
+  --text-primary: #0F172A;         /* Slate 900: High-contrast rich charcoal ink */
+  --text-secondary: #475569;       /* Slate 600: Readable specifications */
+  --text-muted: #64748B;           /* Slate 500: Auxiliary info */
+  --text-dim: #94A3B8;             /* Slate 400: Placeholder / subtle tags */
+  --text-inverse: #FFFFFF;
 
-  /* Atmospheric Ambient & Shadows */
-  --ambient-mesh: radial-gradient(circle at 50% -10%, rgba(99, 102, 241, 0.22) 0%, rgba(6, 182, 212, 0.08) 35%, transparent 70%);
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.45);
-  --shadow-md: 0 10px 28px rgba(0, 0, 0, 0.6);
-  --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.75);
-  --shadow-glow: 0 0 24px rgba(99, 102, 241, 0.45);
-  --shadow-glow-trust: 0 0 20px rgba(16, 185, 129, 0.35);
-
-  /* Typography Scales */
+  /* Font Families */
   --font-display: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
-  /* Spacing & Radii */
+  /* =========================================
+     NATURAL SHADOWS (Real-World Soft Depth)
+     ========================================= */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 12px 28px -4px rgba(0, 0, 0, 0.08), 0 4px 8px -2px rgba(0, 0, 0, 0.04);
+  --shadow-card-hover: 0 14px 32px -4px rgba(15, 23, 42, 0.12), 0 4px 8px -2px rgba(15, 23, 42, 0.06);
+  --shadow-glow: 0 4px 14px rgba(225, 29, 72, 0.25);
+  --shadow-glow-trust: 0 4px 14px rgba(5, 150, 105, 0.2);
+
+  /* Spacing Grid */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -86,109 +98,73 @@
   --space-10: 40px;
   --space-12: 48px;
 
+  /* Radii */
   --radius-xs: 4px;
   --radius-sm: 8px;
   --radius-md: 12px;
-  --radius-lg: 18px;
-  --radius-xl: 24px;
-  --radius-2xl: 32px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
   --radius-full: 9999px;
 
-  /* Responsive Max-Width Containers */
-  --container-max: 1360px;
-  --header-height: 72px;
-  --bottom-bar-height: 68px;
+  /* Layout Widths */
+  --container-max: 1280px;
+  --header-height: 76px;
+  --bottom-bar-height: 64px;
 }
 
 /* =======================================================
-   2. THEME: SUNSET SAFFRON ENERGY (Warm Indian Heritage)
+   DARK MODE OPTION: ARCHITECTURAL DEEP CHARCOAL
+   (Real architectural dark mode without AI neon glows)
    ======================================================= */
-[data-theme="saffron"] {
-  --bg-canvas: #06090E;
-  --bg-surface: #0C121D;
-  --bg-surface-elevated: #131B2B;
-  --bg-surface-hover: #1A2538;
-  --bg-surface-active: #202E47;
-  --bg-glass: rgba(12, 18, 29, 0.88);
-  --bg-glass-card: rgba(19, 27, 43, 0.78);
+[data-theme="dark"] {
+  --bg-canvas: #0B0F19;            /* Deep dark slate */
+  --bg-surface: #111827;           /* Slate 900 container */
+  --bg-surface-elevated: #1F2937;  /* Slate 800 card */
+  --bg-surface-subtle: #1E293B;
+  --bg-surface-hover: #263345;
+  --bg-surface-active: #334155;
+  --bg-glass: rgba(17, 24, 39, 0.92);
+  --bg-glass-card: rgba(31, 41, 55, 0.88);
 
-  --border-focus: #FF6B00;
-  --border-accent-glow: rgba(255, 107, 0, 0.45);
+  --border-subtle: #2D3748;
+  --border-medium: #4A5568;
+  --border-strong: #718096;
+  --border-focus: #F43F5E;
+  --border-accent-glow: #2D3748;
 
-  --color-primary: #FF6B00;
-  --color-primary-light: #FF8526;
-  --color-primary-hover: #E55C00;
-  --color-primary-active: #CC5200;
-  --color-primary-subtle: rgba(255, 107, 0, 0.14);
-  --color-primary-glow: rgba(255, 107, 0, 0.4);
-  --gradient-primary: linear-gradient(135deg, #FF6B00 0%, #FF8A00 50%, #FFA826 100%);
-  --shadow-glow: 0 0 24px rgba(255, 107, 0, 0.45);
-  --ambient-mesh: radial-gradient(circle at 50% -10%, rgba(255, 107, 0, 0.18) 0%, rgba(245, 158, 11, 0.08) 35%, transparent 70%);
-}
+  --color-primary: #F43F5E;
+  --color-primary-light: #FB7185;
+  --color-primary-hover: #E11D48;
+  --color-primary-subtle: rgba(244, 63, 94, 0.15);
+  --color-primary-glow: rgba(244, 63, 94, 0.25);
+  --gradient-primary: linear-gradient(135deg, #F43F5E 0%, #E11D48 100%);
+  --gradient-card-overlay: linear-gradient(180deg, rgba(0, 0, 0, 0) 40%, rgba(11, 15, 25, 0.95) 100%);
 
-/* =======================================================
-   3. THEME: NORDIC JADE OASIS (Architectural Emerald)
-   ======================================================= */
-[data-theme="emerald"] {
-  --bg-canvas: #050B08;
-  --bg-surface: #0B1510;
-  --bg-surface-elevated: #112019;
-  --bg-surface-hover: #172C22;
-  --bg-surface-active: #1D382B;
-  --bg-glass: rgba(11, 21, 16, 0.88);
-  --bg-glass-card: rgba(17, 32, 25, 0.78);
+  --color-trust: #10B981;
+  --color-trust-subtle: rgba(16, 185, 129, 0.15);
+  --color-trust-text: #34D399;
 
-  --border-focus: #10B981;
-  --border-accent-glow: rgba(16, 185, 129, 0.45);
+  --color-student: #818CF8;
+  --color-student-subtle: rgba(129, 140, 248, 0.15);
+  --color-student-text: #A5B4FC;
 
-  --color-primary: #10B981;
-  --color-primary-light: #34D399;
-  --color-primary-hover: #059669;
-  --color-primary-active: #047857;
-  --color-primary-subtle: rgba(16, 185, 129, 0.14);
-  --color-primary-glow: rgba(16, 185, 129, 0.4);
-  --gradient-primary: linear-gradient(135deg, #10B981 0%, #059669 50%, #06B6D4 100%);
-  --shadow-glow: 0 0 24px rgba(16, 185, 129, 0.45);
-  --ambient-mesh: radial-gradient(circle at 50% -10%, rgba(16, 185, 129, 0.2) 0%, rgba(6, 182, 212, 0.08) 35%, transparent 70%);
-}
+  --color-warning: #F59E0B;
+  --color-warning-subtle: rgba(245, 158, 11, 0.15);
+  --color-warning-text: #FCD34D;
 
-/* =======================================================
-   4. THEME: STUDIO PORCELAIN CLEAN (Daylight Modern Luxury)
-   ======================================================= */
-[data-theme="light"] {
-  --bg-canvas: #F8FAFC;
-  --bg-surface: #FFFFFF;
-  --bg-surface-elevated: #F1F5F9;
-  --bg-surface-hover: #E2E8F0;
-  --bg-surface-active: #CBD5E1;
-  --bg-glass: rgba(255, 255, 255, 0.92);
-  --bg-glass-card: rgba(255, 255, 255, 0.95);
+  --color-danger: #EF4444;
+  --color-danger-subtle: rgba(239, 68, 68, 0.15);
+  --color-danger-text: #FCA5A5;
 
-  --border-subtle: rgba(15, 23, 42, 0.08);
-  --border-medium: rgba(15, 23, 42, 0.14);
-  --border-strong: rgba(15, 23, 42, 0.22);
-  --border-focus: #4F46E5;
-  --border-accent-glow: rgba(79, 70, 229, 0.35);
+  --text-primary: #F8FAFC;
+  --text-secondary: #CBD5E1;
+  --text-muted: #94A3B8;
+  --text-dim: #64748B;
+  --text-inverse: #0B0F19;
 
-  --color-primary: #4F46E5;
-  --color-primary-light: #6366F1;
-  --color-primary-hover: #4338CA;
-  --color-primary-active: #3730A3;
-  --color-primary-subtle: rgba(79, 70, 229, 0.1);
-  --color-primary-glow: rgba(79, 70, 229, 0.25);
-  --gradient-primary: linear-gradient(135deg, #4F46E5 0%, #6366F1 50%, #0284C7 100%);
-  --gradient-card-overlay: linear-gradient(180deg, rgba(255, 255, 255, 0) 30%, rgba(255, 255, 255, 0.95) 100%);
-  --on-primary: #FFFFFF;
-
-  --text-primary: #0F172A;
-  --text-secondary: #475569;
-  --text-muted: #64748B;
-  --text-dim: #94A3B8;
-  --text-inverse: #F8FAFC;
-
-  --ambient-mesh: radial-gradient(circle at 50% -10%, rgba(79, 70, 229, 0.08) 0%, rgba(2, 132, 199, 0.04) 35%, transparent 70%);
-  --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.06);
-  --shadow-md: 0 10px 24px rgba(15, 23, 42, 0.08);
-  --shadow-lg: 0 20px 40px rgba(15, 23, 42, 0.12);
-  --shadow-glow: 0 0 20px rgba(79, 70, 229, 0.25);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 16px 36px rgba(0, 0, 0, 0.5);
+  --shadow-card-hover: 0 16px 36px rgba(0, 0, 0, 0.55);
 }

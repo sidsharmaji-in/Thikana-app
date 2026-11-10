@@ -3555,41 +3555,36 @@ const GharDekho = (() => {
     if (btn) btn.textContent = isWide ? '📱 Mobile Frame' : '💻 Wide Dashboard';
   }
 
-  // --- UI/UX PRO MAX MULTI-PALETTE THEME ENGINE ---
-  const THEMES = ['indigo', 'saffron', 'emerald', 'light'];
-  const THEME_LABELS = {
-    indigo: 'Indigo',
-    saffron: 'Saffron',
-    emerald: 'Emerald',
-    light: 'Studio Light'
-  };
-
-  function cycleTheme() {
-    const current = document.documentElement.getAttribute('data-theme') || 'indigo';
-    const nextIdx = (THEMES.indexOf(current) + 1) % THEMES.length;
-    const nextTheme = THEMES[nextIdx];
-    applyTheme(nextTheme);
-  }
-
-  function applyTheme(theme) {
-    if (!THEMES.includes(theme)) theme = 'indigo';
-    document.documentElement.setAttribute('data-theme', theme);
+  // --- NATURAL PROFESSIONAL THEME (CLEAN AIRBNB/STANZA LIVING LIGHT + ARCHITECTURAL DARK) ---
+  function toggleDarkMode() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const next = isDark ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
     try {
-      localStorage.setItem('ghar_active_theme', theme);
+      localStorage.setItem('ghar_theme_mode', next);
     } catch (e) {}
     const labelEl = document.getElementById('themeNameLabel');
-    if (labelEl) labelEl.textContent = THEME_LABELS[theme] || theme;
-    showToast(`🎨 Color Theme: ${THEME_LABELS[theme]}`);
+    if (labelEl) labelEl.textContent = next === 'dark' ? '☀️ Light' : '🌙 Dark';
+    showToast(next === 'dark' ? '🌙 Dark Mode enabled' : '☀️ Light Mode enabled');
   }
 
   function initTheme() {
-    let savedTheme = 'indigo';
+    let saved = 'light';
     try {
-      savedTheme = localStorage.getItem('ghar_active_theme') || 'indigo';
+      saved = localStorage.getItem('ghar_theme_mode') || 'light';
     } catch (e) {}
-    document.documentElement.setAttribute('data-theme', savedTheme);
+    document.documentElement.setAttribute('data-theme', saved);
     const labelEl = document.getElementById('themeNameLabel');
-    if (labelEl) labelEl.textContent = THEME_LABELS[savedTheme] || savedTheme;
+    if (labelEl) labelEl.textContent = saved === 'dark' ? '☀️ Light' : '🌙 Dark';
+  }
+
+  // Alias for backward compatibility
+  function cycleTheme() {
+    toggleDarkMode();
+  }
+
+  function applyTheme(theme) {
+    toggleDarkMode();
   }
 
   return {
@@ -3656,6 +3651,7 @@ const GharDekho = (() => {
     submitNewProperty,
     openInquiryModal,
     toggleViewport,
+    toggleDarkMode,
     cycleTheme,
     applyTheme
   };
