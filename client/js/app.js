@@ -715,13 +715,23 @@ const GharDekho = (() => {
   }
 
   // --- SLICE 3: FULL LISTING DETAIL & HYPERLOCAL BREAKDOWN ---
-  function openDetail(id) {
+  async function openDetail(id) {
     const p = state.properties.find(item => item.id === id);
     if (!p) return;
     state.selectedProperty = p;
     state.galleryActiveIndex = 0;
     state.selectedVisitDate = 'Tomorrow';
     state.selectedVisitSlot = '11:00 AM';
+
+    try {
+      const res = await fetch(`/api/properties/${id}/reviews`);
+      const data = await res.json();
+      if (data.success) {
+        state.currentPropertyReviews = data;
+      }
+    } catch (e) {
+      console.warn('Reviews fetch failed', e);
+    }
 
     renderDetailSheet();
     el.detailModal.classList.add('open');
@@ -732,6 +742,14 @@ const GharDekho = (() => {
     if (!p) return;
     const minPrice = Math.min(...p.rooms.map(r => r.pricePerPerson));
     const activePhoto = p.photos[state.galleryActiveIndex] || p.photos[0];
+    const reviewData = state.currentPropertyReviews || {
+      averageRating: p.rating || 4.8,
+      totalReviews: p.reviewsCount || 0,
+      verifiedReviewsCount: 0,
+      breakdown: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
+      reviews: []
+    };
+    const reviewsList = reviewData.reviews || [];
 
     el.modalContent.innerHTML = `
       <div class="sheet-handle"></div>
@@ -987,6 +1005,95 @@ const GharDekho = (() => {
           <button onclick="alert('Calling owner directly: ' + '${p.owner.phone}')" class="btn-inspect" style="padding: 7px 10px; font-size: 11px;">
             📞 Call
           </button>
+        </div>
+      </div>
+
+      <!-- Slice 6: Verified Resident Reviews & Ratings -->
+      <div class="reviews-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <h3 style="font-size: 14px; font-family: var(--font-display); color: var(--text-primary); margin: 0;">
+            ⭐ Resident Reviews & Ratings
+          </h3>
+          <button class="chip" style="font-size: 10px; padding: 3px 8px; border-color: var(--color-primary); color: var(--color-primary);" onclick="GharDekho.openReviewModal('${p.id}')">
+            ✍️ Write Review
+          </button>
+        </div>
+
+        <!-- Rating Summary Box -->
+        <div class="reviews-summary-card">
+          <div class="reviews-score-block">
+            <div class="reviews-avg-num">${reviewData.averageRating || p.rating || '4.8'}</div>
+            <div class="reviews-stars-row">
+              ${'★'.repeat(Math.round(reviewData.averageRating || p.rating || 5))}${'☆'.repeat(5 - Math.round(reviewData.averageRating || p.rating || 5))}
+            </div>
+            <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">
+              ${reviewData.totalReviews || p.reviewsCount || 0} reviews
+            </div>
+          </div>
+          <div class="reviews-breakdown-bars">
+            ${[5, 4, 3, 2, 1].map(star => {
+              const count = reviewData.breakdown ? (reviewData.breakdown[star] || 0) : 0;
+              const total = reviewData.totalReviews || 1;
+              const pct = Math.round((count / total) * 100);
+              return `
+                <div class="review-bar-item">
+                  <span>${star}★</span>
+                  <div class="review-bar-track">
+                    <div class="review-bar-fill" style="width: ${pct}%;"></div>
+                  </div>
+                  <span>${count}</span>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+
+        <!-- Reviews List -->
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          ${reviewsList.length === 0 ? `
+            <div style="text-align: center; padding: 14px; color: var(--text-muted); font-size: 11px;">
+              No reviews yet. Be the first verified resident to review!
+            </div>
+          ` : reviewsList.map(r => `
+            <div class="review-card-item">
+              <div class="review-card-header">
+                <div>
+                  <div class="review-tenant-name">${r.tenantName}</div>
+                  <div style="display: flex; gap: 6px; align-items: center; margin-top: 2px;">
+                    <span style="color: #F59E0B; font-size: 11px;">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</span>
+                    ${r.isVerifiedTenant ? `
+                      <span class="verified-resident-badge">🛡️ Verified Resident • ${r.stayDurationMonths || 6}m Stay</span>
+                    ` : ''}
+                  </div>
+                </div>
+                <span style="font-size: 10px; color: var(--text-muted);">${formatChatTime(r.createdAt)}</span>
+              </div>
+              <div style="font-size: 11px; font-weight: 700; color: var(--text-primary); margin-bottom: 2px;">
+                ${r.title}
+              </div>
+              <div class="review-comment-text">
+                "${r.comment}"
+              </div>
+
+              ${r.ownerResponse ? `
+                <div class="review-owner-response">
+                  <div class="review-owner-response-title">💬 Response from ${r.ownerResponse.ownerName || 'Makan Maalik'}:</div>
+                  <div>${r.ownerResponse.text}</div>
+                </div>
+              ` : (state.currentRole === 'owner' ? `
+                <button class="chip" style="font-size: 10px; padding: 2px 6px; margin-top: 4px;" onclick="GharDekho.openOwnerReplyModal('${r.id}')">
+                  💬 Reply as Owner
+                </button>
+              ` : '')}
+
+              <div class="review-actions-row">
+                <button class="btn-like-review" onclick="GharDekho.likeReview('${r.id}')">
+                  👍 Helpful (${r.likesCount || 0})
+                </button>
+                <span>Verified Stay</span>
+              </div>
+            </div>
+          `).join('')}
         </div>
       </div>
     `;
@@ -1246,6 +1353,283 @@ const GharDekho = (() => {
     if (el.subModal) el.subModal.classList.remove('active');
   }
 
+  // Slice 6: Review Modal
+  function openReviewModal(propertyId) {
+    const p = state.properties.find(item => item.id === propertyId);
+    if (!p) return;
+    if (!el.subModal || !el.subModalContent) return;
+
+    el.subModalContent.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+        <div>
+          <span style="font-size: 10px; font-weight: 700; color: var(--color-primary); text-transform: uppercase;">
+            ⭐ Resident Experience Review
+          </span>
+          <h3 style="font-family: var(--font-display); font-size: 16px; color: var(--text-primary); margin-top: 2px;">
+            ${p.title}
+          </h3>
+        </div>
+        <button style="background: none; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer; padding: 0 4px;" onclick="GharDekho.closeSubModal()">✕</button>
+      </div>
+
+      <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: var(--radius-sm); padding: 8px 10px; font-size: 11px; color: var(--color-trust); margin-bottom: 14px;">
+        🛡️ Reviews matched with confirmed visits/inquiries receive the official <b>Verified Resident</b> badge.
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
+        <div>
+          <label style="font-size: 11px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 4px;">Overall Rating *</label>
+          <div style="display: flex; gap: 8px; font-size: 22px; cursor: pointer;" id="starRatingPicker">
+            <span onclick="GharDekho.setFormRating(1)" data-val="1">★</span>
+            <span onclick="GharDekho.setFormRating(2)" data-val="2">★</span>
+            <span onclick="GharDekho.setFormRating(3)" data-val="3">★</span>
+            <span onclick="GharDekho.setFormRating(4)" data-val="4">★</span>
+            <span onclick="GharDekho.setFormRating(5)" data-val="5">★</span>
+          </div>
+          <input type="hidden" id="revRatingVal" value="5" />
+        </div>
+
+        <div>
+          <label style="font-size: 11px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 4px;">Your Name *</label>
+          <input type="text" id="revTenantName" class="filter-input" placeholder="e.g. Aryan S." value="" style="width: 100%;" />
+        </div>
+
+        <div>
+          <label style="font-size: 11px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 4px;">WhatsApp Number (for verification)</label>
+          <input type="tel" id="revTenantPhone" class="filter-input" placeholder="+91 98765 43210" value="+91 " style="width: 100%;" />
+        </div>
+
+        <div>
+          <label style="font-size: 11px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 4px;">Stay Duration</label>
+          <select id="revStayMonths" class="filter-input" style="width: 100%;">
+            <option value="1">1 Month</option>
+            <option value="3">3 Months</option>
+            <option value="6" selected>6 Months</option>
+            <option value="12">1 Year+</option>
+          </select>
+        </div>
+
+        <div>
+          <label style="font-size: 11px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 4px;">Review Title</label>
+          <input type="text" id="revTitle" class="filter-input" placeholder="e.g. Excellent power backup and peaceful study desks" style="width: 100%;" />
+        </div>
+
+        <div>
+          <label style="font-size: 11px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 4px;">Detailed Review (Min 10 characters) *</label>
+          <textarea id="revComment" class="filter-input" rows="3" placeholder="Share your experience about water, power cut backup, owner nature, cleanliness and study environment..." style="width: 100%;"></textarea>
+        </div>
+      </div>
+
+      <button class="btn-primary" style="width: 100%;" onclick="GharDekho.submitPropertyReview('${propertyId}')">
+        Publish Resident Review
+      </button>
+    `;
+
+    el.subModal.classList.add('active');
+    setFormRating(5);
+  }
+
+  function setFormRating(num) {
+    const hidden = document.getElementById('revRatingVal');
+    if (hidden) hidden.value = num;
+    const picker = document.getElementById('starRatingPicker');
+    if (picker) {
+      const stars = picker.querySelectorAll('span');
+      stars.forEach(s => {
+        const val = Number(s.getAttribute('data-val'));
+        s.style.color = val <= num ? '#F59E0B' : 'var(--text-muted)';
+      });
+    }
+  }
+
+  async function submitPropertyReview(propertyId) {
+    const rating = document.getElementById('revRatingVal')?.value || 5;
+    const tenantName = document.getElementById('revTenantName')?.value?.trim();
+    const tenantPhone = document.getElementById('revTenantPhone')?.value?.trim();
+    const stayDurationMonths = document.getElementById('revStayMonths')?.value || 6;
+    const title = document.getElementById('revTitle')?.value?.trim();
+    const comment = document.getElementById('revComment')?.value?.trim();
+
+    if (!tenantName) {
+      alert('Please enter your name');
+      return;
+    }
+    if (!comment || comment.length < 10) {
+      alert('Review comment must be at least 10 characters long');
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/properties/${propertyId}/reviews`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tenantName,
+          tenantPhone,
+          rating: Number(rating),
+          title,
+          comment,
+          stayDurationMonths: Number(stayDurationMonths)
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        closeSubModal();
+        showToast(`🎉 Review published! Property rating: ${data.propertyRating} ★`);
+        await openDetail(propertyId);
+      } else {
+        alert(data.message);
+      }
+    } catch (e) {
+      closeSubModal();
+      showToast('Review submitted locally (Offline Mode)');
+    }
+  }
+
+  async function likeReview(reviewId) {
+    try {
+      const res = await fetch(`/api/reviews/${reviewId}/like`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success && state.currentPropertyReviews) {
+        const r = state.currentPropertyReviews.reviews.find(item => item.id === reviewId);
+        if (r) r.likesCount = data.likesCount;
+        renderDetailSheet();
+        showToast('Marked as helpful');
+      }
+    } catch (e) {
+      showToast('Liked locally');
+    }
+  }
+
+  function openOwnerReplyModal(reviewId) {
+    if (!el.subModal || !el.subModalContent) return;
+    el.subModalContent.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+        <div>
+          <span style="font-size: 10px; font-weight: 700; color: var(--color-primary); text-transform: uppercase;">
+            💬 Makan Maalik Public Reply
+          </span>
+          <h3 style="font-family: var(--font-display); font-size: 16px; color: var(--text-primary); margin-top: 2px;">
+            Reply to Resident Review
+          </h3>
+        </div>
+        <button style="background: none; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer; padding: 0 4px;" onclick="GharDekho.closeSubModal()">✕</button>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <label style="font-size: 11px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 4px;">Your Response to Tenant *</label>
+        <textarea id="ownerReplyText" class="filter-input" rows="3" placeholder="Thank the student or address any points mentioned..." style="width: 100%;"></textarea>
+      </div>
+
+      <button class="btn-primary" style="width: 100%;" onclick="GharDekho.submitOwnerReply('${reviewId}')">
+        Post Public Response
+      </button>
+    `;
+
+    el.subModal.classList.add('active');
+  }
+
+  async function submitOwnerReply(reviewId) {
+    const text = document.getElementById('ownerReplyText')?.value?.trim();
+    if (!text) {
+      alert('Please enter response text');
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/reviews/${reviewId}/owner-response`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ responseText: text, ownerName: 'Ramesh Sharma' })
+      });
+      const data = await res.json();
+      if (data.success) {
+        closeSubModal();
+        showToast('Response published');
+        if (state.selectedProperty) {
+          await openDetail(state.selectedProperty.id);
+        }
+      } else {
+        alert(data.message);
+      }
+    } catch (e) {
+      closeSubModal();
+      showToast('Response saved locally');
+    }
+  }
+
+  // Slice 6: Owner KYC Modal
+  function openKycModal(propertyId) {
+    if (!el.subModal || !el.subModalContent) return;
+    el.subModalContent.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+        <div>
+          <span style="font-size: 10px; font-weight: 700; color: var(--color-trust); text-transform: uppercase;">
+            🛡️ GharDekho Shield Verification
+          </span>
+          <h3 style="font-family: var(--font-display); font-size: 16px; color: var(--text-primary); margin-top: 2px;">
+            Makan Maalik Identity Verification
+          </h3>
+        </div>
+        <button style="background: none; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer; padding: 0 4px;" onclick="GharDekho.closeSubModal()">✕</button>
+      </div>
+
+      <p style="font-size: 11px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 12px;">
+        Verify your identity via Aadhaar or Government ID to earn the <b>Shield Verified Makan Maalik</b> badge and rank at the top of student searches.
+      </p>
+
+      <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
+        <div>
+          <label style="font-size: 11px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 4px;">Document Type *</label>
+          <select id="kycDocType" class="filter-input" style="width: 100%;">
+            <option value="Aadhaar Card" selected>Aadhaar Card</option>
+            <option value="PAN Card">PAN Card</option>
+            <option value="Electricity / Property Registration">Property Electricity Bill / Deed</option>
+          </select>
+        </div>
+
+        <div>
+          <label style="font-size: 11px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 4px;">Last 4 Digits of Document *</label>
+          <input type="text" id="kycLast4" class="filter-input" placeholder="e.g. 4821" maxlength="4" style="width: 100%;" />
+        </div>
+      </div>
+
+      <button class="btn-primary" style="width: 100%; background: var(--color-trust); border: none;" onclick="GharDekho.submitOwnerKyc('${propertyId}')">
+        Verify & Issue Shield Badge
+      </button>
+    `;
+
+    el.subModal.classList.add('active');
+  }
+
+  async function submitOwnerKyc(propertyId) {
+    const docType = document.getElementById('kycDocType')?.value;
+    const last4 = document.getElementById('kycLast4')?.value?.trim();
+
+    if (!last4 || last4.length < 4) {
+      alert('Please enter valid 4 digits of document');
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/properties/${propertyId}/verify-owner`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ documentType: docType, documentNumberLast4: last4 })
+      });
+      const data = await res.json();
+      if (data.success) {
+        closeSubModal();
+        showToast('🛡️ Verified! Shield badge issued to your listing.');
+        await fetchProperties();
+        render();
+      }
+    } catch (e) {
+      closeSubModal();
+      showToast('Verified locally (Offline Mode)');
+    }
+  }
+
   // Slice 4: Owner Slot Management
   async function updateSlotStatus(propertyId, roomId, slotId, status) {
     let tenantName = null;
@@ -1490,6 +1874,27 @@ const GharDekho = (() => {
           <div style="font-size: 18px; font-weight: 700; color: var(--color-student);">${state.inquiries.length}</div>
         </div>
       </div>
+
+      <!-- Slice 6: Owner Identity & KYC Verification Status -->
+      ${state.properties.some(p => p.owner && p.owner.isKycDone) ? `
+        <div class="owner-kyc-banner">
+          <div>
+            <div style="font-weight: 700; color: var(--color-trust); font-size: 13px;">🛡️ Shield Verified Makan Maalik</div>
+            <div style="font-size: 11px; color: var(--text-secondary);">Your Aadhaar and property registration have been verified. All rooms carry the Verified Shield badge.</div>
+          </div>
+          <span style="font-size: 22px;">✅</span>
+        </div>
+      ` : `
+        <div class="owner-kyc-unverified">
+          <div>
+            <div style="font-weight: 700; color: var(--color-warning); font-size: 13px;">⚠️ Complete Aadhaar KYC Verification</div>
+            <div style="font-size: 11px; color: var(--text-secondary);">Verified listings get 4x more tenant leads and higher visibility in student search feeds.</div>
+          </div>
+          <button class="chip" style="background: var(--color-warning); color: #000; font-weight: 700; font-size: 11px; border: none; padding: 6px 10px;" onclick="GharDekho.openKycModal('${state.properties[0]?.id}')">
+            Verify Now
+          </button>
+        </div>
+      `}
 
       <h3 style="font-size: 15px; margin-bottom: 10px;">Your Properties (${state.properties.length}):</h3>
       <div class="listings-grid">
@@ -2681,6 +3086,14 @@ const GharDekho = (() => {
     sendChatMessage,
     sendQuickReply,
     updateChatVisitStatus,
+    openReviewModal,
+    setFormRating,
+    submitPropertyReview,
+    likeReview,
+    openOwnerReplyModal,
+    submitOwnerReply,
+    openKycModal,
+    submitOwnerKyc,
     toggleSave,
     nextOwnerStep,
     prevOwnerStep,

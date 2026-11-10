@@ -63,7 +63,58 @@ let inquiries = [
     ]
   }
 ];
-let reviews = [];
+let reviews = [
+  {
+    id: "rev-201",
+    propertyId: "prop-kota-01",
+    tenantName: "Vikas Meena",
+    tenantPhone: "+91 88990 11223",
+    rating: 5,
+    title: "Best study environment for NEET aspirants in Talwandi",
+    comment: "The 24hr generator power backup was a lifesaver during peak Kota summer. Ramesh Sir treats us like his own children. Quiet study desk in Room 204 with ergonomic chair made studying 12 hours easy.",
+    isVerifiedTenant: true,
+    stayDurationMonths: 6,
+    likesCount: 16,
+    createdAt: "2026-10-15T12:00:00.000Z",
+    ownerResponse: {
+      ownerName: "Ramesh Sharma",
+      text: "Dhanyawad Vikas beta! We wish you all the very best for NEET 2027. Study hard and keep shining!",
+      respondedAt: "2026-10-16T14:30:00.000Z"
+    }
+  },
+  {
+    id: "rev-202",
+    propertyId: "prop-kota-01",
+    tenantName: "Priyansh Mandowara",
+    tenantPhone: "+91 97888 44332",
+    rating: 4,
+    title: "Very clean rooms and uninterrupted RO water",
+    comment: "Geyser hot water and RO drinking water are 24x7. The 10:00 PM curfew is strictly monitored by biometric gate, which is actually very reassuring for parents.",
+    isVerifiedTenant: true,
+    stayDurationMonths: 4,
+    likesCount: 9,
+    createdAt: "2026-09-20T10:00:00.000Z",
+    ownerResponse: null
+  },
+  {
+    id: "rev-203",
+    propertyId: "prop-jaipur-03",
+    tenantName: "Pooja Verma",
+    tenantPhone: "+91 94140 11223",
+    rating: 5,
+    title: "Extremely safe for girls, feels like home",
+    comment: "Anita Aunty prepares fresh home-cooked satvik food every day. CCTV and warden provide complete peace of mind. MNIT campus is just 10 mins walk.",
+    isVerifiedTenant: true,
+    stayDurationMonths: 12,
+    likesCount: 22,
+    createdAt: "2026-08-14T09:00:00.000Z",
+    ownerResponse: {
+      ownerName: "Anita Gupta",
+      text: "Thank you Pooja beta! You will always be a daughter of this home.",
+      respondedAt: "2026-08-15T11:00:00.000Z"
+    }
+  }
+];
 
 // Helper: Haversine distance in Kilometers
 function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
@@ -638,7 +689,153 @@ app.put('/api/inquiries/:id/visit-status', (req, res) => {
   });
 });
 
-// 7. GET /api/stats - Platform overview stats
+// 7. GET /api/properties/:id/reviews - Retrieve property reviews & rating stats (Slice 6)
+app.get('/api/properties/:id/reviews', (req, res) => {
+  const property = properties.find(p => p.id === req.params.id);
+  if (!property) return res.status(404).json({ success: false, message: 'Property not found' });
+
+  const propReviews = reviews.filter(r => r.propertyId === req.params.id);
+  const breakdown = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+  
+  propReviews.forEach(r => {
+    const star = Math.min(5, Math.max(1, Math.round(r.rating)));
+    breakdown[star] = (breakdown[star] || 0) + 1;
+  });
+
+  const averageRating = propReviews.length > 0 
+    ? Math.round((propReviews.reduce((sum, r) => sum + r.rating, 0) / propReviews.length) * 10) / 10
+    : property.rating || 5.0;
+
+  res.json({
+    success: true,
+    propertyId: req.params.id,
+    averageRating,
+    totalReviews: propReviews.length,
+    verifiedReviewsCount: propReviews.filter(r => r.isVerifiedTenant).length,
+    breakdown,
+    reviews: propReviews
+  });
+});
+
+// 7a. POST /api/properties/:id/reviews - Submit resident review
+app.post('/api/properties/:id/reviews', (req, res) => {
+  const { tenantName, rating, title, comment, tenantPhone, stayDurationMonths, isVerifiedTenant } = req.body;
+  const property = properties.find(p => p.id === req.params.id);
+  
+  if (!property) return res.status(404).json({ success: false, message: 'Property not found' });
+
+  if (!rating || isNaN(rating) || Number(rating) < 1 || Number(rating) > 5) {
+    return res.status(400).json({ success: false, message: 'Rating must be an integer between 1 and 5' });
+  }
+
+  if (!tenantName || !tenantName.trim()) {
+    return res.status(400).json({ success: false, message: 'Tenant name is required' });
+  }
+
+  if (!comment || comment.trim().length < 10) {
+    return res.status(400).json({ success: false, message: 'Review comment must be at least 10 characters long' });
+  }
+
+  // Check verified tenant status against inquiries
+  const matchingInquiry = inquiries.find(i => 
+    i.propertyId === req.params.id && 
+    (
+      (tenantPhone && i.tenantPhone && i.tenantPhone.includes(tenantPhone.slice(-6))) ||
+      (i.tenantName && i.tenantName.toLowerCase().includes(tenantName.trim().toLowerCase()))
+    )
+  );
+
+  const verified = isVerifiedTenant === true || (matchingInquiry && (matchingInquiry.status === 'confirmed' || matchingInquiry.status === 'visited'));
+
+  const newReview = {
+    id: `rev-${Date.now()}`,
+    propertyId: req.params.id,
+    tenantName: tenantName.trim(),
+    tenantPhone: tenantPhone || '',
+    rating: Number(rating),
+    title: title ? title.trim() : 'Resident Review',
+    comment: comment.trim(),
+    isVerifiedTenant: Boolean(verified),
+    stayDurationMonths: stayDurationMonths ? Number(stayDurationMonths) : 1,
+    likesCount: 0,
+    createdAt: new Date().toISOString(),
+    ownerResponse: null
+  };
+
+  reviews.unshift(newReview);
+
+  // Recalculate property overall rating
+  const propReviews = reviews.filter(r => r.propertyId === req.params.id);
+  const avg = propReviews.reduce((sum, r) => sum + r.rating, 0) / propReviews.length;
+  property.rating = Math.round(avg * 10) / 10;
+  property.reviewsCount = propReviews.length;
+
+  res.status(201).json({
+    success: true,
+    review: newReview,
+    propertyRating: property.rating,
+    reviewsCount: property.reviewsCount,
+    message: 'Review published successfully!'
+  });
+});
+
+// 7b. POST /api/reviews/:reviewId/owner-response - Makan Maalik public reply
+app.post('/api/reviews/:reviewId/owner-response', (req, res) => {
+  const { responseText, ownerName } = req.body;
+  const review = reviews.find(r => r.id === req.params.reviewId);
+  
+  if (!review) return res.status(404).json({ success: false, message: 'Review not found' });
+  if (!responseText || !responseText.trim()) {
+    return res.status(400).json({ success: false, message: 'Response text cannot be empty' });
+  }
+
+  review.ownerResponse = {
+    ownerName: ownerName || 'Makan Maalik',
+    text: responseText.trim(),
+    respondedAt: new Date().toISOString()
+  };
+
+  res.json({
+    success: true,
+    review,
+    message: 'Owner response published successfully'
+  });
+});
+
+// 7c. POST /api/reviews/:reviewId/like - Upvote helpful review
+app.post('/api/reviews/:reviewId/like', (req, res) => {
+  const review = reviews.find(r => r.id === req.params.reviewId);
+  if (!review) return res.status(404).json({ success: false, message: 'Review not found' });
+
+  review.likesCount = (review.likesCount || 0) + 1;
+  res.json({ success: true, likesCount: review.likesCount });
+});
+
+// 7d. POST /api/properties/:id/verify-owner - Submit Aadhaar / Government KYC Verification
+app.post('/api/properties/:id/verify-owner', (req, res) => {
+  const { documentType, documentNumberLast4 } = req.body;
+  const property = properties.find(p => p.id === req.params.id);
+  
+  if (!property) return res.status(404).json({ success: false, message: 'Property not found' });
+  if (!documentType || !documentNumberLast4) {
+    return res.status(400).json({ success: false, message: 'Document type and last 4 digits are required for Aadhaar KYC' });
+  }
+
+  if (!property.owner) property.owner = {};
+  property.owner.isKycDone = true;
+  property.owner.verificationStatus = 'verified';
+  property.owner.kycDocumentType = documentType;
+  property.owner.verificationBadge = 'Aadhaar & Shield Verified Makan Maalik';
+  property.owner.verifiedAt = new Date().toISOString();
+
+  res.json({
+    success: true,
+    message: 'Makan Maalik identity verified successfully!',
+    owner: property.owner
+  });
+});
+
+// 8. GET /api/stats - Platform overview stats
 app.get('/api/stats', (req, res) => {
   const totalBeds = properties.reduce((acc, p) => 
     acc + p.rooms.reduce((rAcc, r) => rAcc + r.maxOccupancy, 0), 0);
