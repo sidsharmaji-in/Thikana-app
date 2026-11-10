@@ -116,6 +116,126 @@ let reviews = [
   }
 ];
 
+// Slice 7 Data Stores: Saved Listings & Notification Center
+let savedProperties = new Set(['prop-kota-01']);
+
+let notificationPreferences = {
+  smsAlerts: true,
+  whatsappUpdates: true,
+  slotVacancyAlerts: true,
+  chatAlerts: true,
+  marketingEmails: false
+};
+
+const notifications = [
+  {
+    id: "notif-101",
+    recipientRole: "tenant",
+    recipientPhone: "+91 98765 43210",
+    type: "visit_confirmed",
+    title: "Room Visit Confirmed! 📅",
+    body: "Ramesh Sharma confirmed your room visit at Krishna Boys Residency for tomorrow at 04:00 PM.",
+    entityType: "inquiry",
+    entityId: "inq-101",
+    propertyId: "prop-kota-01",
+    createdAt: "2026-11-10T09:30:00.000Z",
+    isRead: false,
+    priority: "high",
+    actionLabel: "View Chat & Pass"
+  },
+  {
+    id: "notif-102",
+    recipientRole: "tenant",
+    recipientPhone: "+91 98765 43210",
+    type: "waitlist_alert",
+    title: "Waitlist Alert! Bed Vacancy Opened 🛏️",
+    body: "A bed just became available in 4-Bed Split Room at Krishna Boys Residency. Reserve your slot before it is taken!",
+    entityType: "property",
+    entityId: "prop-kota-01",
+    propertyId: "prop-kota-01",
+    createdAt: "2026-11-09T18:00:00.000Z",
+    isRead: false,
+    priority: "high",
+    actionLabel: "Reserve Bed Now"
+  },
+  {
+    id: "notif-103",
+    recipientRole: "owner",
+    recipientPhone: "+91 98290 00000",
+    type: "new_inquiry",
+    title: "New Student Inquiry Received! 📩",
+    body: "Vikas Meena requested a room visit for NEET 2027 preparation.",
+    entityType: "inquiry",
+    entityId: "inq-101",
+    propertyId: "prop-kota-01",
+    createdAt: "2026-11-08T11:00:00.000Z",
+    isRead: false,
+    priority: "normal",
+    actionLabel: "Review Inquiry"
+  },
+  {
+    id: "notif-104",
+    recipientRole: "tenant",
+    recipientPhone: "+91 98765 43210",
+    type: "owner_response",
+    title: "Makan Maalik Responded to Your Review 💬",
+    body: "Ramesh Sharma replied: \"Dhanyawad Vikas beta! We wish you all the very best for NEET 2027.\"",
+    entityType: "review",
+    entityId: "rev-201",
+    propertyId: "prop-kota-01",
+    createdAt: "2026-10-16T14:30:00.000Z",
+    isRead: true,
+    priority: "normal",
+    actionLabel: "View Review"
+  },
+  {
+    id: "notif-105",
+    recipientRole: "owner",
+    recipientPhone: "+91 98290 00000",
+    type: "new_review",
+    title: "New 5-Star Review Received! ⭐",
+    body: "Vikas Meena left a verified review: 'Best PG near Allen Samarth!'",
+    entityType: "property",
+    entityId: "prop-kota-01",
+    propertyId: "prop-kota-01",
+    createdAt: "2026-10-15T18:00:00.000Z",
+    isRead: true,
+    priority: "normal",
+    actionLabel: "Reply to Tenant"
+  }
+];
+
+function createNotification({
+  recipientRole = 'tenant',
+  recipientPhone = '',
+  type = 'general',
+  title,
+  body,
+  entityType = 'property',
+  entityId = '',
+  propertyId = '',
+  actionLabel = 'View Details',
+  priority = 'normal'
+}) {
+  const notif = {
+    id: `notif-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    recipientRole,
+    recipientPhone,
+    type,
+    title,
+    body,
+    entityType,
+    entityId,
+    propertyId,
+    createdAt: new Date().toISOString(),
+    isRead: false,
+    priority,
+    actionLabel
+  };
+  notifications.unshift(notif);
+  return notif;
+}
+
 // Helper: Haversine distance in Kilometers
 function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
   const R = 6371; // Radius of the earth in km
@@ -555,6 +675,19 @@ app.post('/api/inquiries', (req, res) => {
   };
 
   inquiries.unshift(inquiry);
+
+  createNotification({
+    recipientRole: 'owner',
+    type: 'new_inquiry',
+    title: `New Inquiry from ${tenantName || 'Student'}! 📩`,
+    body: `${tenantName || 'A student'} requested a visit for ${property ? property.title : 'your property'}.`,
+    entityType: 'inquiry',
+    entityId: inquiry.id,
+    propertyId: property ? property.id : propertyId,
+    priority: 'high',
+    actionLabel: 'Open Chat & Reply'
+  });
+
   res.status(201).json({ success: true, inquiry, message: 'Inquiry and chat thread created!' });
 });
 
@@ -626,8 +759,28 @@ app.post('/api/inquiries/:id/messages', (req, res) => {
   // Increment unread count for recipient
   if (role === 'tenant') {
     inquiry.unreadCountOwner = (inquiry.unreadCountOwner || 0) + 1;
+    createNotification({
+      recipientRole: 'owner',
+      type: 'new_message',
+      title: `New message from ${inquiry.tenantName} 💬`,
+      body: text.length > 80 ? text.substring(0, 77) + '...' : text,
+      entityType: 'inquiry',
+      entityId: inquiry.id,
+      propertyId: inquiry.propertyId,
+      actionLabel: 'Reply in Chat'
+    });
   } else {
     inquiry.unreadCountTenant = (inquiry.unreadCountTenant || 0) + 1;
+    createNotification({
+      recipientRole: 'tenant',
+      type: 'new_message',
+      title: `New reply from ${inquiry.ownerName || 'Makan Maalik'} 💬`,
+      body: text.length > 80 ? text.substring(0, 77) + '...' : text,
+      entityType: 'inquiry',
+      entityId: inquiry.id,
+      propertyId: inquiry.propertyId,
+      actionLabel: 'Open Chat'
+    });
   }
 
   res.status(201).json({
@@ -658,8 +811,30 @@ app.put('/api/inquiries/:id/visit-status', (req, res) => {
   let statusText = '';
   if (status === 'confirmed') {
     statusText = `📅 Room Visit Confirmed for ${inquiry.scheduledVisitDate || 'the requested time'}! ${note ? `Note: ${note}` : ''}`;
+    createNotification({
+      recipientRole: 'tenant',
+      type: 'visit_confirmed',
+      title: 'Room Visit Confirmed! 📅',
+      body: `${inquiry.ownerName || 'Makan Maalik'} confirmed your visit for ${inquiry.scheduledVisitDate || 'the requested time'}.`,
+      entityType: 'inquiry',
+      entityId: inquiry.id,
+      propertyId: inquiry.propertyId,
+      priority: 'high',
+      actionLabel: 'View Schedule & Directions'
+    });
   } else if (status === 'rescheduled') {
     statusText = `🔄 Visit Rescheduled to ${scheduledVisitDate || inquiry.scheduledVisitDate}.${note ? ` Note: ${note}` : ''}`;
+    createNotification({
+      recipientRole: 'tenant',
+      type: 'visit_rescheduled',
+      title: 'Room Visit Rescheduled 🔄',
+      body: `${inquiry.ownerName || 'Makan Maalik'} proposed a new visit time: ${scheduledVisitDate || inquiry.scheduledVisitDate}.`,
+      entityType: 'inquiry',
+      entityId: inquiry.id,
+      propertyId: inquiry.propertyId,
+      priority: 'high',
+      actionLabel: 'Review New Time'
+    });
   } else if (status === 'cancelled') {
     statusText = `❌ Visit Cancelled.${note ? ` Reason: ${note}` : ''}`;
   } else if (status === 'visited') {
@@ -770,6 +945,17 @@ app.post('/api/properties/:id/reviews', (req, res) => {
   property.rating = Math.round(avg * 10) / 10;
   property.reviewsCount = propReviews.length;
 
+  createNotification({
+    recipientRole: 'owner',
+    type: 'new_review',
+    title: `New ${rating}★ Review for ${property.title}! ⭐`,
+    body: `${tenantName}: "${comment.substring(0, 60)}..."`,
+    entityType: 'property',
+    entityId: property.id,
+    propertyId: property.id,
+    actionLabel: 'Reply to Review'
+  });
+
   res.status(201).json({
     success: true,
     review: newReview,
@@ -794,6 +980,17 @@ app.post('/api/reviews/:reviewId/owner-response', (req, res) => {
     text: responseText.trim(),
     respondedAt: new Date().toISOString()
   };
+
+  createNotification({
+    recipientRole: 'tenant',
+    type: 'owner_response',
+    title: `${ownerName || 'Makan Maalik'} Responded to Your Review 💬`,
+    body: `"${responseText.trim().substring(0, 75)}..."`,
+    entityType: 'review',
+    entityId: review.id,
+    propertyId: review.propertyId,
+    actionLabel: 'View Response'
+  });
 
   res.json({
     success: true,
@@ -832,6 +1029,224 @@ app.post('/api/properties/:id/verify-owner', (req, res) => {
     success: true,
     message: 'Makan Maalik identity verified successfully!',
     owner: property.owner
+  });
+});
+
+// ==========================================
+// SLICE 7: SAVED LISTINGS & NOTIFICATION CENTER
+// ==========================================
+
+// 8a. GET /api/saved - Retrieve tenant shortlisted rooms with live freshness
+app.get('/api/saved', (req, res) => {
+  const list = [];
+  
+  for (const propId of savedProperties) {
+    const property = properties.find(p => p.id === propId);
+    if (property) {
+      const totalBeds = property.rooms ? property.rooms.reduce((acc, r) => acc + (r.maxOccupancy || 0), 0) : 0;
+      const occupiedBeds = property.rooms ? property.rooms.reduce((acc, r) => acc + (r.currentOccupancy || 0), 0) : 0;
+      const availableBeds = Math.max(0, totalBeds - occupiedBeds);
+      const minPrice = property.rooms && property.rooms.length > 0
+        ? Math.min(...property.rooms.map(r => r.pricePerPerson))
+        : property.price;
+
+      let occupancyBadge = '🟢 Available';
+      let urgencyColor = 'trust';
+      if (!property.isAvailable) {
+        occupancyBadge = '⚠️ Listing Paused by Owner';
+        urgencyColor = 'danger';
+      } else if (availableBeds === 0) {
+        occupancyBadge = '🛑 Fully Occupied (Waitlist Open)';
+        urgencyColor = 'danger';
+      } else if (availableBeds <= 2) {
+        occupancyBadge = `⚡ Only ${availableBeds} ${availableBeds === 1 ? 'Bed' : 'Beds'} Left!`;
+        urgencyColor = 'warning';
+      } else {
+        occupancyBadge = `🟢 ${availableBeds} Beds Vacant`;
+      }
+
+      list.push({
+        ...property,
+        isSaved: true,
+        freshness: {
+          isAvailable: property.isAvailable,
+          totalBeds,
+          occupiedBeds,
+          availableBeds,
+          occupancyBadge,
+          urgencyColor,
+          priceFreshness: `₹${minPrice}/mo · Verified Direct Rate`,
+          lastChecked: new Date().toISOString()
+        }
+      });
+    } else {
+      // Soft-deleted or delisted property notice
+      list.push({
+        id: propId,
+        title: 'Listing No Longer Available',
+        locality: 'Unknown Area',
+        city: 'Delisted',
+        photos: ['https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80'],
+        isSaved: true,
+        isAvailable: false,
+        freshness: {
+          isAvailable: false,
+          occupancyBadge: '⚠️ Listing Removed or Expired',
+          urgencyColor: 'danger',
+          priceFreshness: 'Archived',
+          statusAlert: 'This property has been taken off the market by the owner.'
+        }
+      });
+    }
+  }
+
+  res.json({
+    success: true,
+    savedCount: list.length,
+    properties: list
+  });
+});
+
+// 8b. POST /api/saved/:id - Save property to wishlist
+app.post('/api/saved/:id', (req, res) => {
+  const property = properties.find(p => p.id === req.params.id);
+  if (!property) {
+    return res.status(404).json({ success: false, message: 'Property not found' });
+  }
+
+  savedProperties.add(property.id);
+  res.json({
+    success: true,
+    isSaved: true,
+    propertyId: property.id,
+    savedCount: savedProperties.size,
+    message: '❤️ Room shortlisted to your Saved list!'
+  });
+});
+
+// 8c. DELETE /api/saved/:id - Remove property from saved list
+app.delete('/api/saved/:id', (req, res) => {
+  const existed = savedProperties.has(req.params.id);
+  savedProperties.delete(req.params.id);
+
+  res.json({
+    success: true,
+    isSaved: false,
+    propertyId: req.params.id,
+    savedCount: savedProperties.size,
+    message: existed ? 'Removed from your shortlisted rooms' : 'Property was not in saved list'
+  });
+});
+
+// 8d. GET /api/notifications - Notification center feed
+app.get('/api/notifications', (req, res) => {
+  const { role = 'tenant', unreadOnly } = req.query;
+  
+  let list = notifications;
+  if (role && role !== 'all') {
+    list = list.filter(n => n.recipientRole === role);
+  }
+
+  const unreadCount = list.filter(n => !n.isRead).length;
+
+  if (unreadOnly === 'true') {
+    list = list.filter(n => !n.isRead);
+  }
+
+  res.json({
+    success: true,
+    count: list.length,
+    unreadCount,
+    notifications: list
+  });
+});
+
+// 8e. POST /api/notifications/:id/mark-read - Mark single notification as read
+app.post('/api/notifications/:id/mark-read', (req, res) => {
+  const notif = notifications.find(n => n.id === req.params.id);
+  if (!notif) {
+    return res.status(404).json({ success: false, message: 'Notification not found' });
+  }
+
+  notif.isRead = true;
+  const roleUnread = notifications.filter(n => n.recipientRole === notif.recipientRole && !n.isRead).length;
+
+  res.json({
+    success: true,
+    notification: notif,
+    unreadCount: roleUnread,
+    message: 'Notification marked as read'
+  });
+});
+
+// 8f. POST /api/notifications/mark-all-read - Mark all notifications as read
+app.post('/api/notifications/mark-all-read', (req, res) => {
+  const { role = 'tenant' } = req.body || {};
+  let count = 0;
+
+  notifications.forEach(n => {
+    if ((role === 'all' || n.recipientRole === role) && !n.isRead) {
+      n.isRead = true;
+      count++;
+    }
+  });
+
+  res.json({
+    success: true,
+    markedCount: count,
+    unreadCount: 0,
+    message: 'All notifications marked as read'
+  });
+});
+
+// 8g. POST /api/notifications/send - Dispatch / trigger new notification
+app.post('/api/notifications/send', (req, res) => {
+  const { recipientRole, recipientPhone, type, title, body, entityType, entityId, propertyId, actionLabel, priority } = req.body;
+
+  if (!recipientRole || !title || !body) {
+    return res.status(400).json({ success: false, message: 'recipientRole, title, and body are required' });
+  }
+
+  const notif = createNotification({
+    recipientRole,
+    recipientPhone,
+    type: type || 'general',
+    title,
+    body,
+    entityType,
+    entityId,
+    propertyId,
+    actionLabel,
+    priority: priority || 'normal'
+  });
+
+  res.status(201).json({
+    success: true,
+    notification: notif,
+    message: 'Notification dispatched successfully'
+  });
+});
+
+// 8h. GET /api/notifications/preferences - Notification settings
+app.get('/api/notifications/preferences', (req, res) => {
+  res.json({
+    success: true,
+    preferences: notificationPreferences
+  });
+});
+
+// 8i. PUT /api/notifications/preferences - Update notification settings
+app.put('/api/notifications/preferences', (req, res) => {
+  const updates = req.body || {};
+  notificationPreferences = {
+    ...notificationPreferences,
+    ...updates
+  };
+
+  res.json({
+    success: true,
+    preferences: notificationPreferences,
+    message: 'Notification preferences updated successfully'
   });
 });
 

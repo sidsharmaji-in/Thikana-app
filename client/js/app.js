@@ -17,6 +17,18 @@ const GharDekho = (() => {
     userCoords: { lat: 25.1388, lng: 75.8344, label: "Talwandi, Kota" },
     mapSelectedId: null,
     savedIds: new Set(['prop-kota-01']),
+    savedPropertiesData: [],
+    notifications: [],
+    unreadNotifCount: 0,
+    notifFilter: 'all', // 'all' | 'unread'
+    isNotifModalOpen: false,
+    preferences: {
+      smsAlerts: true,
+      whatsappUpdates: true,
+      slotVacancyAlerts: true,
+      chatAlerts: true,
+      marketingEmails: false
+    },
     properties: [],
     inquiries: [],
     activeChatThreadId: null,
@@ -82,6 +94,8 @@ const GharDekho = (() => {
     shell: document.getElementById('deviceShell'),
     roleTenantBtn: document.getElementById('roleTenantBtn'),
     roleOwnerBtn: document.getElementById('roleOwnerBtn'),
+    notifBellBtn: document.getElementById('notifBellBtn'),
+    notifBadge: document.getElementById('notifBadge'),
     cityPill: document.getElementById('cityPill'),
     searchInput: document.getElementById('searchInput'),
     chipsContainer: document.getElementById('quickChips'),
@@ -93,13 +107,15 @@ const GharDekho = (() => {
     filterContent: document.getElementById('filterModalContent'),
     subModal: document.getElementById('subModal'),
     subModalContent: document.getElementById('subModalContent'),
+    notifModal: document.getElementById('notifModal'),
+    notifModalContent: document.getElementById('notifModalContent'),
     toast: document.getElementById('toastMsg')
   };
 
   // Initialize App
   async function init() {
     setupEventListeners();
-    await Promise.all([fetchProperties(), fetchInquiries()]);
+    await Promise.all([fetchProperties(), fetchInquiries(), fetchNotifications(), fetchSaved()]);
     render();
   }
 
@@ -168,6 +184,13 @@ const GharDekho = (() => {
         if (e.target === el.subModal) closeSubModal();
       });
     }
+
+    // Close notification modal on backdrop click
+    if (el.notifModal) {
+      el.notifModal.addEventListener('click', (e) => {
+        if (e.target === el.notifModal) closeNotifications();
+      });
+    }
   }
 
   // Switch role between Tenant and Owner
@@ -183,6 +206,7 @@ const GharDekho = (() => {
       state.activeTab = 'owner_listings';
       fetchInquiries();
     }
+    fetchNotifications();
     renderNav();
     render();
     showToast(`Switched to ${role === 'tenant' ? 'Kirayedaar (Tenant)' : 'Makan Maalik (Owner)'} mode`);
@@ -1694,51 +1718,347 @@ const GharDekho = (() => {
     }
   }
 
+  // ==========================================
+  // SLICE 7: SAVED LISTINGS & NOTIFICATION ENGINE
+  // ==========================================
+
+  // Fetch notifications from server
+  async function fetchNotifications() {
+    try {
+      const res = await fetch(`/api/notifications?role=${state.currentRole}`);
+      const data = await res.json();
+      if (data.success) {
+        state.notifications = data.notifications || [];
+        state.unreadNotifCount = data.unreadCount || 0;
+        updateNotifBadge();
+      }
+    } catch (e) {
+      console.warn('Failed to fetch notifications', e);
+    }
+  }
+
+  // Update notification bell badge indicator
+  function updateNotifBadge() {
+    if (!el.notifBadge) return;
+    if (state.unreadNotifCount > 0) {
+      el.notifBadge.textContent = state.unreadNotifCount > 9 ? '9+' : state.unreadNotifCount;
+      el.notifBadge.style.display = 'flex';
+    } else {
+      el.notifBadge.style.display = 'none';
+    }
+  }
+
+  // Toggle Notification Drawer
+  function toggleNotificationDrawer() {
+    if (state.isNotifModalOpen) {
+      closeNotifications();
+    } else {
+      openNotifications();
+    }
+  }
+
+  function openNotifications() {
+    state.isNotifModalOpen = true;
+    renderNotificationCenter();
+    if (el.notifModal) el.notifModal.style.display = 'flex';
+  }
+
+  function closeNotifications() {
+    state.isNotifModalOpen = false;
+    if (el.notifModal) el.notifModal.style.display = 'none';
+  }
+
+  function filterNotifications(filter) {
+    state.notifFilter = filter;
+    renderNotificationCenter();
+  }
+
+  function formatRelativeTime(isoString) {
+    if (!isoString) return 'Just now';
+    const diffMs = Date.now() - new Date(isoString).getTime();
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHr = Math.floor(diffMin / 60);
+    const diffDays = Math.floor(diffHr / 24);
+
+    if (diffMin < 1) return 'Just now';
+    if (diffMin < 60) return `${diffMin}m ago`;
+    if (diffHr < 24) return `${diffHr}h ago`;
+    return `${diffDays}d ago`;
+  }
+
+  function renderNotificationCenter() {
+    if (!el.notifModalContent) return;
+    const isUnreadFilter = state.notifFilter === 'unread';
+    const displayedNotifs = isUnreadFilter 
+      ? state.notifications.filter(n => !n.isRead) 
+      : state.notifications;
+
+    const unreadCount = state.notifications.filter(n => !n.isRead).length;
+
+    el.notifModalContent.innerHTML = `
+      <div class="sheet-handle"></div>
+      <div class="notif-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 20px;">🔔</span>
+          <h2 style="font-family: var(--font-display); font-size: 17px; color: var(--text-primary); margin: 0;">
+            Notification Center (${state.currentRole === 'tenant' ? 'Kirayedaar' : 'Makan Maalik'})
+          </h2>
+        </div>
+        <div style="display: flex; gap: 6px;">
+          ${unreadCount > 0 ? `
+            <button class="btn-subtle" onclick="GharDekho.markAllNotificationsRead()" title="Mark all read" style="font-size: 11px;">
+              ✓✓ All Read
+            </button>
+          ` : ''}
+          <button class="btn-close-circle" onclick="GharDekho.closeNotifications()" aria-label="Close Notifications">✕</button>
+        </div>
+      </div>
+
+      <div class="notif-tabs">
+        <button class="notif-tab ${!isUnreadFilter ? 'active' : ''}" onclick="GharDekho.filterNotifications('all')">
+          All (${state.notifications.length})
+        </button>
+        <button class="notif-tab ${isUnreadFilter ? 'active' : ''}" onclick="GharDekho.filterNotifications('unread')">
+          Unread (${unreadCount})
+        </button>
+      </div>
+
+      <div class="notif-list-container">
+        ${displayedNotifs.length === 0 ? `
+          <div style="text-align: center; padding: 40px 10px; color: var(--text-muted);">
+            <div style="font-size: 32px; margin-bottom: 8px;">🔕</div>
+            <div style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">
+              No ${isUnreadFilter ? 'unread ' : ''}notifications
+            </div>
+            <p style="font-size: 12px;">You're completely caught up! We'll alert you the moment an update arrives.</p>
+          </div>
+        ` : displayedNotifs.map(n => {
+          let icon = '🔔';
+          if (n.type === 'visit_confirmed') icon = '📅';
+          else if (n.type === 'waitlist_alert' || n.type === 'slot_reserved') icon = '🛏️';
+          else if (n.type === 'new_message' || n.type === 'owner_response') icon = '💬';
+          else if (n.type === 'new_review') icon = '⭐';
+          else if (n.type === 'new_inquiry') icon = '📩';
+
+          return `
+            <div class="notif-card ${!n.isRead ? 'unread' : ''}" onclick="GharDekho.handleNotificationClick('${n.id}')">
+              <div class="notif-icon-box ${n.type}">
+                ${icon}
+              </div>
+              <div class="notif-content">
+                <div class="notif-title-row">
+                  <span class="notif-title">${n.title}</span>
+                  <span class="notif-time">${formatRelativeTime(n.createdAt)}</span>
+                </div>
+                <div class="notif-body">${n.body}</div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+                  <button class="notif-action-btn" onclick="event.stopPropagation(); GharDekho.handleNotificationClick('${n.id}')">
+                    ${n.actionLabel || 'View Details'} →
+                  </button>
+                  ${!n.isRead ? `
+                    <button class="btn-subtle" onclick="event.stopPropagation(); GharDekho.markNotificationRead('${n.id}')" style="font-size: 10px; padding: 2px 6px;">
+                      Mark read
+                    </button>
+                  ` : ''}
+                </div>
+              </div>
+              ${!n.isRead ? '<div class="notif-unread-dot"></div>' : ''}
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  async function markNotificationRead(id) {
+    try {
+      const res = await fetch(`/api/notifications/${id}/mark-read`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        const notif = state.notifications.find(n => n.id === id);
+        if (notif) notif.isRead = true;
+        state.unreadNotifCount = data.unreadCount || 0;
+        updateNotifBadge();
+        renderNotificationCenter();
+      }
+    } catch (e) {
+      console.warn('Error marking notification read', e);
+    }
+  }
+
+  async function markAllNotificationsRead() {
+    try {
+      const res = await fetch('/api/notifications/mark-all-read', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: state.currentRole })
+      });
+      const data = await res.json();
+      if (data.success) {
+        state.notifications.forEach(n => {
+          if (n.recipientRole === state.currentRole) n.isRead = true;
+        });
+        state.unreadNotifCount = 0;
+        updateNotifBadge();
+        renderNotificationCenter();
+        showToast('✓✓ All notifications marked as read');
+      }
+    } catch (e) {
+      console.warn('Error marking all notifications read', e);
+    }
+  }
+
+  async function handleNotificationClick(id) {
+    const notif = state.notifications.find(n => n.id === id);
+    if (!notif) return;
+
+    if (!notif.isRead) {
+      markNotificationRead(id);
+    }
+
+    closeNotifications();
+
+    if (notif.entityType === 'inquiry') {
+      if (state.currentRole !== notif.recipientRole) {
+        switchRole(notif.recipientRole);
+      }
+      setTab(notif.recipientRole === 'owner' ? 'owner_inquiries' : 'messages');
+      state.activeChatThreadId = notif.entityId;
+      render();
+    } else if (notif.entityType === 'property' || notif.entityType === 'review') {
+      openDetail(notif.propertyId || notif.entityId);
+    } else {
+      showToast(notif.title);
+    }
+  }
+
+  async function updatePreference(key, value) {
+    state.preferences[key] = value;
+    try {
+      await fetch('/api/notifications/preferences', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [key]: value })
+      });
+      showToast(`Preference updated: ${value ? 'Enabled' : 'Disabled'}`);
+    } catch (e) {
+      console.warn('Preference update failed', e);
+    }
+  }
+
+  // Fetch saved listings from API
+  async function fetchSaved() {
+    try {
+      const res = await fetch('/api/saved');
+      const data = await res.json();
+      if (data.success && data.properties) {
+        state.savedPropertiesData = data.properties;
+        state.savedIds = new Set(data.properties.map(p => p.id));
+      }
+    } catch (e) {
+      console.warn('Failed to fetch saved properties', e);
+    }
+  }
+
   // Toggle Save Property
-  function toggleSave(id) {
-    if (state.savedIds.has(id)) {
+  async function toggleSave(id) {
+    const isSaved = state.savedIds.has(id);
+    if (isSaved) {
       state.savedIds.delete(id);
       showToast('Removed from saved rooms');
+      try {
+        await fetch(`/api/saved/${id}`, { method: 'DELETE' });
+      } catch (e) {
+        console.warn('DELETE saved failed', e);
+      }
     } else {
       state.savedIds.add(id);
       showToast('❤️ Saved to your shortlisted rooms');
+      try {
+        await fetch(`/api/saved/${id}`, { method: 'POST' });
+      } catch (e) {
+        console.warn('POST saved failed', e);
+      }
     }
+    await fetchSaved();
     render();
   }
 
-  // Render Saved Tab
+  // Render Saved Tab with Live Freshness
   function renderSaved() {
-    const savedList = state.properties.filter(p => state.savedIds.has(p.id));
+    const savedList = state.savedPropertiesData.length > 0 
+      ? state.savedPropertiesData 
+      : state.properties.filter(p => state.savedIds.has(p.id));
+
     el.contentArea.innerHTML = `
       <div style="margin-bottom: 16px;">
         <h2 style="font-family: var(--font-display); font-size: 20px; color: var(--text-primary);">
           Shortlisted Rooms (${savedList.length})
         </h2>
-        <p style="font-size: 12px; color: var(--text-secondary);">Your saved rooms with live availability tracking</p>
+        <p style="font-size: 12px; color: var(--text-secondary);">Your bookmarked rooms with live occupancy & price freshness</p>
       </div>
     `;
 
     if (savedList.length === 0) {
       el.contentArea.innerHTML += `
         <div style="text-align: center; padding: 60px 10px; color: var(--text-secondary);">
-          <div style="font-size: 40px; margin-bottom: 10px;">🤍</div>
-          <h3 style="color: var(--text-primary); margin-bottom: 6px;">No saved rooms yet</h3>
-          <p style="font-size: 13px;">Tap the heart icon on any listing to shortlist it for easy comparison</p>
+          <div style="font-size: 44px; margin-bottom: 12px;">🤍</div>
+          <h3 style="color: var(--text-primary); margin-bottom: 6px; font-size: 16px;">No saved rooms yet</h3>
+          <p style="font-size: 13px; max-width: 260px; margin: 0 auto 16px; line-height: 1.4;">
+            Tap the heart icon on any room card to shortlist it here and track live vacant beds!
+          </p>
+          <button class="btn-inspect" onclick="GharDekho.setTab('khojo')" style="display: inline-block; padding: 8px 16px;">
+            🔍 Explore Rooms in ${state.activeCity}
+          </button>
         </div>
       `;
       return;
     }
 
-    let grid = '<div class="listings-grid">';
+    let grid = '<div class="listings-grid" style="display: flex; flex-direction: column; gap: 14px;">';
     savedList.forEach(p => {
+      const minPrice = p.rooms && p.rooms.length > 0 
+        ? Math.min(...p.rooms.map(r => r.pricePerPerson)) 
+        : (p.price || 3500);
+
+      const freshness = p.freshness || {
+        occupancyBadge: '🟢 Available',
+        urgencyColor: 'trust',
+        priceFreshness: `₹${minPrice}/mo · Verified Direct Rate`
+      };
+
+      const coverPhoto = (p.photos && p.photos.length > 0) 
+        ? p.photos[0] 
+        : 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80';
+
       grid += `
-        <div class="property-card" onclick="GharDekho.openDetail('${p.id}')">
-          <div class="card-body">
-            <div class="card-locality">📍 ${p.locality}, ${p.city}</div>
-            <h3 class="card-title">${p.title}</h3>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
-              <span class="price-amount">₹${Math.min(...p.rooms.map(r => r.pricePerPerson))}/mo</span>
-              <button class="btn-inspect">View Details</button>
+        <div class="saved-card" onclick="GharDekho.openDetail('${p.id}')">
+          <div class="saved-card-header">
+            <img class="saved-card-img" src="${coverPhoto}" alt="${p.title}" loading="lazy" />
+            <button class="saved-card-heart-btn" title="Remove from saved" onclick="event.stopPropagation(); GharDekho.toggleSave('${p.id}')">
+              ❤️
+            </button>
+            <div class="saved-freshness-banner ${freshness.urgencyColor || 'trust'}">
+              ${freshness.occupancyBadge}
+            </div>
+          </div>
+          <div class="saved-card-body">
+            <div style="font-size: 11px; color: var(--color-trust); font-weight: 600;">
+              📍 ${p.locality}, ${p.city}
+            </div>
+            <h3 class="saved-card-title">${p.title}</h3>
+            <div class="saved-card-meta">
+              <span class="saved-card-price">₹${minPrice}<span style="font-size: 11px; color: var(--text-muted); font-weight: 400;">/person</span></span>
+              <span style="font-size: 11px; color: var(--text-muted);">${freshness.priceFreshness || 'Best Price'}</span>
+            </div>
+            <div class="saved-card-actions" onclick="event.stopPropagation()">
+              <button class="btn-inspect" onclick="GharDekho.openDetail('${p.id}')">
+                Inspect Room & Book Visit →
+              </button>
+              <button class="btn-subtle" title="Remove" onclick="GharDekho.toggleSave('${p.id}')">
+                🗑️
+              </button>
             </div>
           </div>
         </div>
@@ -1831,7 +2151,49 @@ const GharDekho = (() => {
         </div>
         <div style="background: var(--bg-surface); padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); display: flex; justify-content: space-between;">
           <span>GharDekho App Version</span>
-          <span style="color: var(--text-muted);">v1.0.0 (Slice 0 Scaffold)</span>
+          <span style="color: var(--text-muted);">v1.0.0 (Slice 7 Ready)</span>
+        </div>
+      </div>
+
+      <div style="margin-top: 24px; margin-bottom: 10px;">
+        <h3 style="font-family: var(--font-display); font-size: 15px; color: var(--text-primary);">
+          🔔 Notification Alerts & Channels
+        </h3>
+        <p style="font-size: 11px; color: var(--text-secondary);">Manage how you receive real-time visit and slot alerts</p>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div class="pref-row">
+          <div>
+            <div class="pref-label">WhatsApp Updates 💬</div>
+            <div class="pref-desc">Instant visit confirmations, owner chat and directions on WhatsApp</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" ${state.preferences.whatsappUpdates ? 'checked' : ''} onchange="GharDekho.updatePreference('whatsappUpdates', this.checked)">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="pref-row">
+          <div>
+            <div class="pref-label">SMS Instant Alerts 📱</div>
+            <div class="pref-desc">Urgent SMS notifications when Makan Maalik confirms your room visit</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" ${state.preferences.smsAlerts ? 'checked' : ''} onchange="GharDekho.updatePreference('smsAlerts', this.checked)">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="pref-row">
+          <div>
+            <div class="pref-label">Bed Vacancy & Waitlist Alerts 🛏️</div>
+            <div class="pref-desc">Instant alert when a reserved or occupied bed in your saved PG opens up</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" ${state.preferences.slotVacancyAlerts ? 'checked' : ''} onchange="GharDekho.updatePreference('slotVacancyAlerts', this.checked)">
+            <span class="slider"></span>
+          </label>
         </div>
       </div>
     `;
@@ -3095,6 +3457,14 @@ const GharDekho = (() => {
     openKycModal,
     submitOwnerKyc,
     toggleSave,
+    toggleNotificationDrawer,
+    openNotifications,
+    closeNotifications,
+    filterNotifications,
+    markNotificationRead,
+    markAllNotificationsRead,
+    handleNotificationClick,
+    updatePreference,
     nextOwnerStep,
     prevOwnerStep,
     toggleDraftAmenity,

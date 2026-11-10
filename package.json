@@ -6,13 +6,14 @@
   "scripts": {
     "start": "node server/src/index.js",
     "dev": "node server/src/index.js",
-    "test": "node server/test/slice1-owner.test.js && node server/test/slice2-search-map.test.js && node server/test/slice3-detail.test.js && node server/test/slice4-slots.test.js && node server/test/slice5-chat.test.js && node server/test/slice6-reviews.test.js",
+    "test": "node server/test/slice1-owner.test.js && node server/test/slice2-search-map.test.js && node server/test/slice3-detail.test.js && node server/test/slice4-slots.test.js && node server/test/slice5-chat.test.js && node server/test/slice6-reviews.test.js && node server/test/slice7-notifications.test.js",
     "test:slice1": "node server/test/slice1-owner.test.js",
     "test:slice2": "node server/test/slice2-search-map.test.js",
     "test:slice3": "node server/test/slice3-detail.test.js",
     "test:slice4": "node server/test/slice4-slots.test.js",
     "test:slice5": "node server/test/slice5-chat.test.js",
-    "test:slice6": "node server/test/slice6-reviews.test.js"
+    "test:slice6": "node server/test/slice6-reviews.test.js",
+    "test:slice7": "node server/test/slice7-notifications.test.js"
   },
   "keywords": [
     "rental",

@@ -562,21 +562,25 @@ flowchart TD
   - Thread list with property preview, last message snippet, timestamp, and unread counters
   - Tests: `server/test/slice5-chat.test.js` (29/29 tests passing)
 
-- [ ] **Slice 6 — Reviews + Verification**
-  - Review form: 1–5 stars + text (tenant after move-in, 30 days post inquiry)
-  - Verified tenant badge on review (must have had an inquiry marked as moved-in)
-  - Owner response to review
-  - Property review summary on listing card
-  - Owner identity verification flow (Aadhaar / PAN upload → manual review)
-  - _UI states:_ review pending approval · owner verification badge · flag review
-  - _Tests:_ review submission · verified badge logic · rating average calculation
+- [x] **Slice 6 — Reviews + Verification** ✅ _(Completed & Verified)_
+  - Review form: 1–5 stars + text with anti-spam minimum comment validation
+  - Verified resident badge automatically issued matching confirmed inquiry/move-in history
+  - Dynamic recalculation of property overall rating and total review counts
+  - Public Makan Maalik response threading (`POST /api/reviews/:reviewId/owner-response`)
+  - Community helpful review upvote counter (`POST /api/reviews/:reviewId/like`)
+  - Owner identity verification flow (Aadhaar / Government ID KYC modal & verification status)
+  - Shield Verified Makan Maalik badge issuance
+  - Tests: `server/test/slice6-reviews.test.js` (28/28 tests passing)
 
-- [ ] **Slice 7 — Notifications + Saved Listings**
-  - Save/unsave property (heart icon, instant feedback)
-  - Saved listings tab with freshness indicator (price changed, now occupied)
-  - Push notifications: new inquiry, new message, slot approved, review received
-  - Notification preferences in settings
-  - _UI states:_ saved listing now gone (soft delete notice) · notification permission denied
+- [x] **Slice 7 — Notifications + Saved Listings** ✅ _(Completed & Verified)_
+  - Save/unsave property (heart icon with instant optimistic update and server persistence)
+  - Shortlisted rooms tab (`GET /api/saved`) with live freshness badges (`⚡ 2 Beds Left`, `🛑 Fully Occupied`, `⚠️ Listing Paused by Owner`)
+  - Notification center feed (`GET /api/notifications`) with role-based filtering (Tenant vs Owner)
+  - Read receipts & unread counters (`POST /api/notifications/:id/mark-read`, `POST /api/notifications/mark-all-read`)
+  - Automated notification triggers for new chat messages, room visit confirmations, bed vacancy alerts, reviews, and owner responses
+  - Header notification bell with unread indicator badge and slide-up Notification Center drawer
+  - Notification preferences management (WhatsApp updates, SMS alerts, slot vacancy alerts) in Profile tab
+  - Tests: `server/test/slice7-notifications.test.js` (50/50 tests passing)
 
 - [ ] **Slice 8 — Hardening**
   - **A11y:** VoiceOver/TalkBack labels on all interactive elements, minimum 48dp targets, contrast check

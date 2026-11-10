@@ -109,3 +109,54 @@ Record what was actually run, not what was intended.
     - Quick-reply chips for rapid zero-friction student queries (*"Is study desk & chair provided?"*, *"Is WiFi speed good for live lectures?"*, *"Can I come for physical room visit today at 5 PM?"*).
     - Bottom message input bar with instant Enter-key sending and automatic scroll-to-bottom behavior.
 - **Next Slice:** Slice 6 — Reviews, Ratings & Owner Verification (5-star review form, verified tenant badges, owner responses, and Aadhaar trust badges).
+
+## Slice 6 — Reviews, Ratings & Owner KYC Verification (2026-11-10)
+- **Status:** ✅ COMPLETED & VERIFIED
+- **Automated Test Suite:** `npm run test:slice6` (`server/test/slice6-reviews.test.js`)
+- **Results:** 28 Passed, 0 Failed (Cumulative across Slices 1–6: 140 Passed, 0 Failed)
+- **Features Verified:**
+  - Resident Reviews REST API:
+    - `GET /api/properties/:id/reviews`: returns reviews list, average rating, star breakdown (1 to 5 stars), and verified resident count.
+    - `POST /api/properties/:id/reviews`: accepts tenant name, rating (1–5), title, comment (min 10 chars), phone number, and stay duration.
+    - Rejects invalid ratings (outside 1–5), missing tenant name, or comments < 10 characters with HTTP 400.
+  - Verified Resident Badge Issuance:
+    - Cross-references incoming reviewer against confirmed inquiry and move-in records.
+    - Issues `Verified Resident 🛡️` badge for genuine residents while gracefully accepting prospective reviews without badge.
+  - Dynamic Overall Rating Recalculation:
+    - Atomically recalculates `property.rating` and `property.reviewsCount` on new submissions.
+  - Makan Maalik Public Response System:
+    - `POST /api/reviews/:reviewId/owner-response`: allows property owners to publicly thank or address tenant feedback.
+  - Community Helpful Upvoting:
+    - `POST /api/reviews/:reviewId/like`: increments helpful upvote counter for transparent peer validation.
+  - Owner Aadhaar & Government ID KYC Verification:
+    - `POST /api/properties/:id/verify-owner`: securely validates document type and last 4 digits.
+    - Sets `isKycDone = true` and issues `Aadhaar & Shield Verified Makan Maalik` trust badge.
+- **Next Slice:** Slice 7 — Notifications & Saved Listings (shortlisted rooms with live freshness, in-app notification center, and preferences).
+
+## Slice 7 — Notifications & Saved Listings Engine (2026-11-10)
+- **Status:** ✅ COMPLETED & VERIFIED
+- **Automated Test Suite:** `npm run test:slice7` (`server/test/slice7-notifications.test.js`)
+- **Results:** 50 Passed, 0 Failed (Cumulative across Slices 1–7: 190 Passed, 0 Failed)
+- **Features Verified:**
+  - Shortlisted / Saved Rooms Management:
+    - `GET /api/saved`: returns tenant's saved listings enriched with live availability tracking, total/available beds, occupancy urgency badges, and price freshness indicators.
+    - `POST /api/saved/:id`: bookmarks a room to wishlist with instant feedback.
+    - `DELETE /api/saved/:id`: cleanly removes property from saved list.
+    - Rejects nonexistent property IDs with HTTP 404.
+    - Handles soft-deleted/delisted properties gracefully with clear archive notice (`Listing Paused by Owner`).
+  - In-App Notification Center:
+    - Header notification bell with unread badge counter and pulsing glow animation.
+    - Slide-up Notification Center drawer with tabs ("All" vs "Unread") and one-click "✓✓ All Read" action.
+    - Categorized notification cards with role-specific icons (📅 Visit, 🛏️ Slot, 💬 Message, ⭐ Review, 📩 Inquiry).
+    - Deep linking on tap: clicking notification jumps directly to chat conversation, property detail sheet, or review section.
+    - `POST /api/notifications/:id/mark-read` and `POST /api/notifications/mark-all-read`.
+  - Automated Event-Driven Notification Triggers:
+    - Triggered on new in-app chat message (`POST /api/inquiries/:id/messages`) for recipient role.
+    - Triggered on room visit status updates (`PUT /api/inquiries/:id/visit-status`) with high priority.
+    - Triggered on resident reviews (`POST /api/properties/:id/reviews`) notifying Makan Maalik.
+    - Triggered on owner responses (`POST /api/reviews/:reviewId/owner-response`) notifying tenant.
+    - Triggered when waitlist bed is assigned or bed status transitions to vacant.
+  - Notification Channels & Preferences:
+    - `GET /api/notifications/preferences` and `PUT /api/notifications/preferences`.
+    - Interactive toggle switches in Profile tab for WhatsApp visit updates, SMS instant alerts, and bed vacancy alerts.
+- **Next Slice:** Slice 8 — Hardening (Accessibility, Performance & Offline Cache).
