@@ -93,6 +93,11 @@
             </button>
           </div>
 
+          <!-- Authentication Profile / Sign In Pill (Slice P2) -->
+          <button class="theme-toggle-btn" id="headerAuthBtn" onclick="GharDekho.openAuthModal()" title="Sign In with Mobile OTP" aria-label="Sign In with Mobile OTP">
+            <span id="headerAuthLabel">👤 Sign In</span>
+          </button>
+
           <!-- Viewport Simulator Toggle (Mobile vs Full Screen) -->
           <button class="viewport-btn" id="viewportBtn" onclick="GharDhundo.toggleViewport()" title="Toggle Viewport Layout" aria-label="Toggle Wide Viewport Simulator">
             📱 Mobile
@@ -179,6 +184,13 @@
   <div class="modal-overlay" id="notifModal" role="dialog" aria-modal="true" aria-label="Notification Center">
     <div class="detail-sheet notif-sheet" id="notifModalContent">
       <!-- Injected dynamically by GharDekho.renderNotifications() -->
+    </div>
+  </div>
+
+  <!-- Phone OTP Login Modal (Slice P2 Production Auth) -->
+  <div class="submodal-overlay" id="authModal" role="dialog" aria-modal="true" aria-label="Sign In with Indian Mobile">
+    <div class="submodal-box" id="authModalContent" style="max-width: 440px; margin: auto;">
+      <!-- Injected dynamically by GharDekho.renderAuthModal() -->
     </div>
   </div>
 

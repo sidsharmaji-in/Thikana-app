@@ -29,6 +29,17 @@ const GharDekho = (() => {
       chatAlerts: true,
       marketingEmails: false
     },
+    // Slice P2: Authentication & Profile Session
+    authUser: (() => {
+      try { return JSON.parse(localStorage.getItem('ghar_user')); } catch (e) { return null; }
+    })(),
+    authToken: (() => {
+      try { return localStorage.getItem('ghar_token') || null; } catch (e) { return null; }
+    })(),
+    authStep: 'phone',
+    authPhone: '',
+    authDemoOtp: '',
+    authRole: 'tenant',
     properties: [],
     inquiries: [],
     activeChatThreadId: null,
@@ -109,6 +120,9 @@ const GharDekho = (() => {
     subModalContent: document.getElementById('subModalContent'),
     notifModal: document.getElementById('notifModal'),
     notifModalContent: document.getElementById('notifModalContent'),
+    authModal: document.getElementById('authModal'),
+    authModalContent: document.getElementById('authModalContent'),
+    headerAuthLabel: document.getElementById('headerAuthLabel'),
     offlineBanner: document.getElementById('offlineBanner'),
     a11yAnnouncer: document.getElementById('a11yAnnouncer'),
     toast: document.getElementById('toastMsg')
@@ -202,6 +216,8 @@ const GharDekho = (() => {
     registerServiceWorker();
     setupNetworkListeners();
     setupEventListeners();
+    syncAuthHeader();
+    if (state.authToken) checkUserSession();
     await Promise.all([fetchProperties(), fetchInquiries(), fetchNotifications(), fetchSaved()]);
     render();
   }
@@ -292,6 +308,13 @@ const GharDekho = (() => {
     if (el.notifModal) {
       el.notifModal.addEventListener('click', (e) => {
         if (e.target === el.notifModal) closeNotifications();
+      });
+    }
+
+    // Close auth modal on backdrop click
+    if (el.authModal) {
+      el.authModal.addEventListener('click', (e) => {
+        if (e.target === el.authModal) closeAuthModal();
       });
     }
   }
@@ -2260,20 +2283,54 @@ const GharDekho = (() => {
     `;
   }
 
-  // Render Profile
+  // Render Profile (Slice P2 Production Auth & Verified Identity)
   function renderProfile() {
+    const user = state.authUser;
+    const isOwner = state.currentRole === 'owner';
+
     el.contentArea.innerHTML = `
-      <div style="margin-bottom: 16px; text-align: center; padding-top: 20px;">
-        <div style="width: 72px; height: 72px; background: var(--gradient-primary); border-radius: 50%; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; font-size: 32px; box-shadow: var(--shadow-glow);">
-          👤
+      <div style="margin-bottom: 20px; text-align: center; padding-top: 16px;">
+        <div style="width: 72px; height: 72px; background: var(--gradient-primary); border-radius: 50%; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; font-size: 32px; box-shadow: var(--shadow-glow); color: #FFF; font-weight: 700;">
+          ${user ? (user.fullName ? user.fullName[0].toUpperCase() : '👤') : '👤'}
         </div>
-        <h2 style="font-family: var(--font-display); font-size: 18px; color: var(--text-primary);">
-          ${state.currentRole === 'tenant' ? 'Aman Kumar (Student)' : 'Satish Sharma (Property Owner)'}
+        
+        <h2 style="font-family: var(--font-display); font-size: 20px; color: var(--text-primary); margin-bottom: 4px;">
+          ${user ? user.fullName : (isOwner ? 'Makan Maalik (Guest)' : 'Kirayedaar (Guest)')}
         </h2>
-        <div style="font-size: 12px; color: var(--color-trust); font-weight: 600; margin-top: 2px;">
-          🛡️ Aadhaar Verified Resident
+
+        <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">
+          ${user ? `${user.phone} · <span style="text-transform: capitalize; font-weight: 600; color: var(--color-primary);">${user.role}</span>` : 'Phone OTP Login Available'}
         </div>
+
+        ${user && user.isKycVerified ? `
+          <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(16, 185, 129, 0.12); color: var(--color-trust); padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; border: 1px solid rgba(16, 185, 129, 0.25);">
+            🛡️ Aadhaar Verified Resident (${user.aadhaarNumber || 'Verified'})
+          </div>
+        ` : user ? `
+          <button class="btn-inspect" onclick="GharDekho.verifyKyc()" style="font-size: 11px; padding: 4px 12px; background: var(--bg-surface); border: 1px solid var(--color-trust); color: var(--color-trust);">
+            ⚡ Verify Aadhaar with DigiLocker
+          </button>
+        ` : `
+          <button class="btn-inspect" onclick="GharDekho.openAuthModal()" style="font-size: 12px; padding: 6px 16px;">
+            📱 Sign In with Phone OTP
+          </button>
+        `}
       </div>
+
+      ${!user ? `
+        <div style="background: var(--bg-surface); border: 1px dashed var(--border-medium); border-radius: var(--radius-md); padding: 14px 16px; margin-bottom: 16px; text-align: center;">
+          <div style="font-weight: 600; font-size: 13px; color: var(--text-primary); margin-bottom: 4px;">⚡ Quick One-Click Demo Logins</div>
+          <p style="font-size: 11px; color: var(--text-secondary); margin-bottom: 12px;">Instant test logins with pre-configured verified profiles</p>
+          <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+            <button class="theme-toggle-btn" onclick="GharDekho.quickLogin('tenant')" style="font-size: 11px; padding: 6px 12px;">
+              🎓 Vikas Meena (Student)
+            </button>
+            <button class="theme-toggle-btn" onclick="GharDekho.quickLogin('owner')" style="font-size: 11px; padding: 6px 12px;">
+              🔑 Ramesh Sharma (Owner)
+            </button>
+          </div>
+        </div>
+      ` : ''}
 
       <div style="display: flex; flex-direction: column; gap: 8px;">
         <div style="background: var(--bg-surface); padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); display: flex; justify-content: space-between;">
@@ -2290,9 +2347,17 @@ const GharDekho = (() => {
         </div>
         <div style="background: var(--bg-surface); padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); display: flex; justify-content: space-between;">
           <span>GharDekho App Version</span>
-          <span style="color: var(--text-muted);">v1.0.0 (Slice 7 Ready)</span>
+          <span style="color: var(--text-muted);">v1.2.0 (Slice P2 Production Auth)</span>
         </div>
       </div>
+
+      ${user ? `
+        <div style="margin-top: 14px;">
+          <button onclick="GharDekho.logoutUser()" class="theme-toggle-btn" style="width: 100%; justify-content: center; color: var(--color-danger); border-color: rgba(239, 68, 68, 0.3); padding: 10px;">
+            🚪 Log Out of GharDekho (${user.fullName.split(' ')[0]})
+          </button>
+        </div>
+      ` : ''}
 
       <div style="margin-top: 24px; margin-bottom: 10px;">
         <h3 style="font-family: var(--font-display); font-size: 15px; color: var(--text-primary);">
@@ -3547,6 +3612,310 @@ const GharDekho = (() => {
     }
   }
 
+  // --- SLICE P2: AUTHENTICATION & PHONE OTP CONTROLLER ---
+  function syncAuthHeader() {
+    const label = document.getElementById('headerAuthLabel');
+    if (!label) return;
+    if (state.authUser) {
+      const firstName = state.authUser.fullName ? state.authUser.fullName.split(' ')[0] : 'Profile';
+      label.textContent = `👤 ${firstName}`;
+    } else {
+      label.textContent = '👤 Sign In';
+    }
+  }
+
+  async function checkUserSession() {
+    if (!state.authToken) return;
+    try {
+      const res = await fetch('/api/auth/me', {
+        headers: { 'Authorization': `Bearer ${state.authToken}` }
+      });
+      const data = await res.json();
+      if (data.success && data.user) {
+        state.authUser = data.user;
+        try {
+          localStorage.setItem('ghar_user', JSON.stringify(data.user));
+        } catch (e) {}
+        syncAuthHeader();
+      } else {
+        logoutUser(false);
+      }
+    } catch (e) {}
+  }
+
+  function openAuthModal() {
+    state.authStep = 'phone';
+    state.authPhone = '';
+    state.authDemoOtp = '';
+    renderAuthModal();
+    const modal = document.getElementById('authModal');
+    if (modal) modal.classList.add('active');
+  }
+
+  function closeAuthModal() {
+    const modal = document.getElementById('authModal');
+    if (modal) modal.classList.remove('active');
+  }
+
+  function renderAuthModal() {
+    const container = document.getElementById('authModalContent');
+    if (!container) return;
+
+    if (state.authStep === 'phone') {
+      container.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h3 style="font-family: var(--font-display); font-size: 18px; color: var(--text-primary); margin: 0;">
+            📱 Mobile OTP Sign In
+          </h3>
+          <button onclick="GharDekho.closeAuthModal()" style="background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-muted);">&times;</button>
+        </div>
+
+        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
+          Enter your 10-digit Indian mobile number. We will send a 6-digit verification code.
+        </p>
+
+        <div style="margin-bottom: 14px;">
+          <label style="display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">Mobile Number (मोबाइल नंबर)</label>
+          <div style="display: flex; gap: 8px;">
+            <div style="background: var(--bg-surface); border: 1px solid var(--border-medium); border-radius: var(--radius-md); padding: 10px 14px; font-weight: 600; font-size: 14px; color: var(--text-primary); display: flex; align-items: center;">
+              🇮🇳 +91
+            </div>
+            <input type="tel" id="authPhoneInput" placeholder="98290 12345" maxlength="10" value="${state.authPhone.replace('+91', '')}" style="flex: 1; background: var(--bg-surface); border: 1px solid var(--border-medium); border-radius: var(--radius-md); padding: 10px 14px; font-size: 15px; color: var(--text-primary); font-family: inherit;">
+          </div>
+        </div>
+
+        <div style="margin-bottom: 18px;">
+          <label style="display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">I am signing in as:</label>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <button type="button" class="role-btn ${state.authRole === 'tenant' ? 'active' : ''}" onclick="GharDekho.setAuthRole('tenant')">
+              🎓 Kirayedaar (Student)
+            </button>
+            <button type="button" class="role-btn ${state.authRole === 'owner' ? 'active' : ''}" onclick="GharDekho.setAuthRole('owner')">
+              🔑 Makan Maalik (Owner)
+            </button>
+          </div>
+        </div>
+
+        <button onclick="GharDekho.submitSendOtp()" class="btn-inspect" style="width: 100%; padding: 12px; font-size: 14px; margin-bottom: 16px;">
+          Send Verification OTP (ओटीपी भेजें) ➔
+        </button>
+
+        <div style="border-top: 1px solid var(--border-subtle); padding-top: 14px; text-align: center;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Or instant test login with 1-click:</div>
+          <div style="display: flex; gap: 8px; justify-content: center;">
+            <button class="theme-toggle-btn" onclick="GharDekho.quickLogin('tenant')" style="font-size: 11px;">
+              🎓 Vikas (Student)
+            </button>
+            <button class="theme-toggle-btn" onclick="GharDekho.quickLogin('owner')" style="font-size: 11px;">
+              🔑 Ramesh (Owner)
+            </button>
+          </div>
+        </div>
+      `;
+    } else {
+      container.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h3 style="font-family: var(--font-display); font-size: 18px; color: var(--text-primary); margin: 0;">
+            🔒 Enter Verification Code
+          </h3>
+          <button onclick="GharDekho.closeAuthModal()" style="background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-muted);">&times;</button>
+        </div>
+
+        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">
+          We sent a 6-digit code to <strong style="color: var(--text-primary);">${state.authPhone}</strong>
+        </p>
+
+        ${state.authDemoOtp ? `
+          <div style="background: rgba(16, 185, 129, 0.12); border: 1px dashed var(--color-trust); border-radius: var(--radius-md); padding: 8px 12px; margin-bottom: 14px; font-size: 12px; color: var(--color-trust); display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="document.getElementById('authOtpInput').value='${state.authDemoOtp}'">
+            <span>⚡ Test Demo OTP: <strong>${state.authDemoOtp}</strong></span>
+            <span style="font-weight: 700; text-decoration: underline;">Auto-Fill</span>
+          </div>
+        ` : ''}
+
+        <div style="margin-bottom: 18px;">
+          <input type="text" id="authOtpInput" placeholder="000000" maxlength="6" value="${state.authDemoOtp || ''}" style="width: 100%; text-align: center; letter-spacing: 6px; font-size: 24px; font-weight: 700; background: var(--bg-surface); border: 2px solid var(--border-medium); border-radius: var(--radius-md); padding: 10px; color: var(--color-primary); font-family: monospace;">
+        </div>
+
+        <button onclick="GharDekho.submitVerifyOtp()" class="btn-inspect" style="width: 100%; padding: 12px; font-size: 14px; margin-bottom: 14px;">
+          Verify & Sign In (लॉगिन करें)
+        </button>
+
+        <div style="display: flex; justify-content: space-between; font-size: 12px;">
+          <button onclick="GharDekho.setAuthStep('phone')" style="background: none; border: none; color: var(--text-muted); cursor: pointer; text-decoration: underline;">
+            ← Change Number
+          </button>
+          <button onclick="GharDekho.submitSendOtp()" style="background: none; border: none; color: var(--color-primary); cursor: pointer; font-weight: 600;">
+            Resend OTP 🔄
+          </button>
+        </div>
+      `;
+    }
+  }
+
+  function setAuthRole(role) {
+    state.authRole = role;
+    renderAuthModal();
+  }
+
+  function setAuthStep(step) {
+    state.authStep = step;
+    renderAuthModal();
+  }
+
+  async function submitSendOtp() {
+    const input = document.getElementById('authPhoneInput');
+    const raw = input ? input.value.trim() : state.authPhone;
+    if (!raw || raw.length < 10) {
+      showToast('❌ Please enter a valid 10-digit mobile number');
+      return;
+    }
+
+    try {
+      showToast('Sending OTP to ' + raw + '...');
+      const res = await fetch('/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: raw })
+      });
+      const data = await res.json();
+      if (data.success) {
+        state.authPhone = data.phone;
+        state.authDemoOtp = data.demoOtp || '';
+        state.authStep = 'otp';
+        renderAuthModal();
+        showToast('✅ OTP sent! ' + (data.demoOtp ? `(Demo: ${data.demoOtp})` : 'Check SMS'));
+      } else {
+        showToast('❌ ' + (data.message || 'Failed to send OTP'));
+      }
+    } catch (e) {
+      showToast('❌ Server error sending OTP');
+    }
+  }
+
+  async function submitVerifyOtp(explicitCode) {
+    const input = document.getElementById('authOtpInput');
+    const code = explicitCode || (input ? input.value.trim() : '');
+
+    if (!code || code.length !== 6) {
+      showToast('❌ Please enter 6-digit OTP code');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone: state.authPhone,
+          code: code,
+          role: state.authRole,
+          fullName: state.authRole === 'owner' ? 'Satish Sharma' : 'Aman Kumar'
+        })
+      });
+      const data = await res.json();
+      if (data.success && data.user) {
+        state.authUser = data.user;
+        state.authToken = data.accessToken;
+        try {
+          localStorage.setItem('ghar_token', data.accessToken);
+          localStorage.setItem('ghar_user', JSON.stringify(data.user));
+        } catch (e) {}
+
+        syncAuthHeader();
+        closeAuthModal();
+        if (data.user.role === 'owner') {
+          switchRole('owner');
+        } else {
+          switchRole('tenant');
+        }
+        render();
+        showToast(`🎉 Signed in as ${data.user.fullName}!`);
+      } else {
+        showToast('❌ ' + (data.message || 'Invalid OTP code'));
+      }
+    } catch (e) {
+      showToast('❌ Verification failed. Please retry.');
+    }
+  }
+
+  async function quickLogin(role) {
+    const phone = role === 'owner' ? '+919829000000' : '+918899011223';
+    state.authPhone = phone;
+    state.authRole = role;
+
+    try {
+      const sendRes = await fetch('/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone })
+      });
+      const sendData = await sendRes.json();
+      const code = sendData.demoOtp || '123456';
+
+      await submitVerifyOtp(code);
+    } catch (e) {
+      showToast('❌ Quick login failed');
+    }
+  }
+
+  async function logoutUser(notify = true) {
+    try {
+      if (state.authToken) {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken: state.authToken })
+        });
+      }
+    } catch (e) {}
+
+    state.authUser = null;
+    state.authToken = null;
+    try {
+      localStorage.removeItem('ghar_token');
+      localStorage.removeItem('ghar_user');
+    } catch (e) {}
+
+    syncAuthHeader();
+    render();
+    if (notify) showToast('👋 Logged out of GharDekho');
+  }
+
+  async function verifyKyc() {
+    if (!state.authToken) {
+      openAuthModal();
+      return;
+    }
+
+    try {
+      showToast('Verifying with DigiLocker sandbox...');
+      const res = await fetch('/api/auth/kyc/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${state.authToken}`
+        },
+        body: JSON.stringify({
+          documentType: 'Aadhaar',
+          documentNumberLast4: '4210'
+        })
+      });
+      const data = await res.json();
+      if (data.success && data.user) {
+        state.authUser = data.user;
+        try {
+          localStorage.setItem('ghar_user', JSON.stringify(data.user));
+        } catch (e) {}
+        render();
+        showToast('🛡️ Aadhaar identity verified! Verified Resident badge awarded.');
+      } else {
+        showToast('❌ KYC verification failed');
+      }
+    } catch (e) {
+      showToast('❌ Error verifying KYC');
+    }
+  }
+
   function toggleViewport() {
     if (!el.shell) el.shell = document.getElementById('deviceShell');
     el.shell.classList.toggle('mode-wide');
@@ -3659,6 +4028,15 @@ const GharDekho = (() => {
     deleteListing,
     submitNewProperty,
     openInquiryModal,
+    openAuthModal,
+    closeAuthModal,
+    setAuthRole,
+    setAuthStep,
+    submitSendOtp,
+    submitVerifyOtp,
+    quickLogin,
+    logoutUser,
+    verifyKyc,
     toggleViewport,
     toggleDarkMode,
     toggleLanguage,
