@@ -245,3 +245,4 @@ class BedLockService {
 const bedLockService = new BedLockService();
 
 module.exports = bedLockService;
+

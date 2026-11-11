@@ -8,4 +8,7 @@ yarn-error.log*
 .env.local
 dist/
 .expo/
+uploads/
+server/uploads/*
+!server/uploads/.gitkeep
 

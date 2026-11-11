@@ -960,12 +960,15 @@ While Slices 0 through 8 successfully proved all business logic, UI layouts, and
     - Early release endpoint and lease auto-expiration eviction loop
 - **Verification:** 30 automated integration tests passing in `server/test/sliceP3-realtime-locks.test.js` (322 total suite tests).
 
-#### Slice P4: Direct Cloud Media Upload Pipeline
+#### Slice P4: Direct Cloud Media Upload Pipeline ✅ (Completed - 64 Tests)
 - **Deliverables:**
-  - Presigned direct upload endpoint (`POST /api/media/presign-upload`) generating secure, time-limited upload URLs for AWS S3 / Cloudinary.
-  - Client-side direct upload workflow: photos upload directly from browser/mobile to object storage without choking the backend Express server.
-  - Server-side image transformation webhook: auto-conversion to modern `.webp` and `.avif` formats, watermarking with GharDekho trust seal, and 3 standard thumbnails (120px mini, 480px card, 1200px full gallery).
-- **Verification:** Test uploading image files, verifying signature generation, MIME-type allowlist enforcement, and rejection of non-image extensions.
+  - Presigned direct upload endpoint (`POST /api/media/presign`) generating secure, time-limited upload URLs and HMAC-SHA256 authorization signatures.
+  - Pluggable storage providers: `LocalDiskProvider` (local dev/offline zero-dependency stream receiver), `CloudinaryProvider` (folder, timestamp, signed params), and `S3Provider` (AWS SigV4 presigned PUT URLs for Mumbai `ap-south-1`).
+  - Batch presign endpoint (`POST /api/media/batch-presign`) generating credentials for 5–20 listing photos in a single round-trip.
+  - Strict MIME-type allowlist enforcement (`image/jpeg`, `image/png`, `image/webp`, `image/heic`) with automated rejection of executables, HTML, SVGs, and non-image payloads.
+  - File size bounds enforcement (maximum 10MB, rejection of 0-byte or oversized uploads).
+  - Media upload verification & completion endpoint (`POST /api/media/confirm`) issuing responsive formats: 120px micro-thumbnail, 480px card thumbnail, 1200px full gallery, and GharDekho Trust Watermark metadata.
+- **Verification:** 64 automated integration tests passing in `server/test/sliceP4-media-upload.test.js` (386 total suite tests).
 
 #### Slice P5: Headless Playwright E2E Automated Test Suite & CI/CD
 - **Deliverables:**
