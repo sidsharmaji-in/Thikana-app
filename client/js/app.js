@@ -1037,9 +1037,12 @@ const GharDekho = (() => {
                 <div style="font-family: var(--font-mono); font-size: 16px; font-weight: 700; color: var(--color-primary);">
                   ₹${room.pricePerPerson.toLocaleString('en-IN')}<span style="font-size: 10px; font-weight: 400; color: var(--text-muted);">/bed/mo</span>
                 </div>
-                <div style="font-size: 10px; color: ${isRoomFull ? 'var(--color-warning)' : 'var(--color-trust)'}; font-weight: 600;">
+                <div style="font-size: 10px; color: ${isRoomFull ? 'var(--color-warning)' : 'var(--color-trust)'}; font-weight: 600; margin-bottom: 4px;">
                   ${isRoomFull ? '● Room Full' : `● ${room.slots.filter(s => s.status === 'available').length} Beds Vacant`}
                 </div>
+                <button class="room-vibe-pill-btn" onclick="GharDekho.openRoomAggregateVibe('${p.id}', '${room.id}')" title="Check room vibe compatibility">
+                  ⚡ Room Vibe Check
+                </button>
               </div>
             </div>
 
@@ -1362,8 +1365,8 @@ const GharDekho = (() => {
     }
   }
 
-  // Slice 4: Roommate Vibe Modal
-  function openRoommateVibe(propertyId, roomId, slotId) {
+  // Slice 4 & P7: Roommate Vibe Modal & Compatibility Engine
+  async function openRoommateVibe(propertyId, roomId, slotId) {
     const p = state.properties.find(item => item.id === propertyId);
     if (!p) return;
     const room = p.rooms.find(r => r.id === roomId);
@@ -1377,11 +1380,34 @@ const GharDekho = (() => {
     const prof = slot.roommateProfile;
     if (!el.subModal || !el.subModalContent) return;
 
+    // Fetch dynamic compatibility if available
+    let dynamicVibe = null;
+    try {
+      const res = await fetch(`/api/roommates/rooms/${propertyId}/${roomId}/vibe-check`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data) {
+          const breakdown = (json.data.occupantBreakdowns || []).find(b => b.occupantName === slot.tenantName);
+          if (breakdown) dynamicVibe = breakdown;
+        }
+      }
+    } catch (e) {
+      // Fallback to static score
+    }
+
+    const score = dynamicVibe ? dynamicVibe.overallScore : (prof.vibeScore || 94);
+    const matchTier = dynamicVibe ? dynamicVibe.matchLevel : (score >= 90 ? 'Super Vibe 🔥' : 'Great Match ✨');
+    const synergies = dynamicVibe ? dynamicVibe.synergies : ['Shared discipline and respectful quiet study hours'];
+    const frictions = dynamicVibe ? dynamicVibe.frictions : [];
+    const dims = dynamicVibe ? dynamicVibe.dimensions : null;
+
+    const fillClass = score >= 90 ? 'super' : score >= 80 ? 'great' : score >= 60 ? 'fair' : 'mismatched';
+
     el.subModalContent.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
         <div>
           <span style="font-size: 10px; font-weight: 700; color: var(--color-student); text-transform: uppercase; letter-spacing: 0.5px;">
-            🎓 Opt-In Roommate Compatibility Card
+            🎓 Roommate Compatibility Radar (Slice P7)
           </span>
           <h3 style="font-family: var(--font-display); font-size: 17px; color: var(--text-primary); margin-top: 2px;">
             ${slot.tenantName}
@@ -1390,14 +1416,83 @@ const GharDekho = (() => {
         <button style="background: none; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer; padding: 0 4px;" onclick="GharDekho.closeSubModal()">✕</button>
       </div>
 
-      <div style="background: rgba(139, 92, 246, 0.08); border: 1px solid rgba(139, 92, 246, 0.2); border-radius: var(--radius-md); padding: 10px 12px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
+      <!-- Compatibility Score Banner -->
+      <div style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.12), rgba(249, 115, 22, 0.08)); border: 1px solid rgba(139, 92, 246, 0.25); border-radius: var(--radius-md); padding: 12px 14px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
         <div>
-          <div style="font-size: 10px; color: var(--text-muted);">Vibe Compatibility Score</div>
-          <div style="font-size: 18px; font-weight: 700; color: var(--color-student); font-family: var(--font-mono);">${prof.vibeScore || 96}% Match</div>
+          <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Personalized Vibe Score</div>
+          <div style="font-size: 22px; font-weight: 800; color: var(--color-student); font-family: var(--font-mono);">${score}% Match</div>
+          <div style="font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-top: 2px;">${matchTier}</div>
         </div>
-        <span style="font-size: 24px;">✨</span>
+        <button class="room-vibe-pill-btn" onclick="GharDekho.openMyHabitsModal()" title="Customize habits">
+          ⚙️ Edit My Habits
+        </button>
       </div>
 
+      <!-- Compatibility Dimensions Progress -->
+      ${dims ? `
+        <div style="margin-bottom: 14px; background: var(--bg-surface); padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+          <div style="font-size: 11px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">Habit Alignment Breakdown:</div>
+          
+          <div class="vibe-progress-container">
+            <div class="vibe-progress-header">
+              <span>⏰ Sleep Schedule</span>
+              <strong>${dims.sleep.score} / ${dims.sleep.max} pts</strong>
+            </div>
+            <div class="vibe-progress-track">
+              <div class="vibe-progress-fill ${dims.sleep.score >= 20 ? 'super' : 'mismatched'}" style="width: ${(dims.sleep.score / dims.sleep.max) * 100}%;"></div>
+            </div>
+          </div>
+
+          <div class="vibe-progress-container">
+            <div class="vibe-progress-header">
+              <span>📚 Study Noise Preference</span>
+              <strong>${dims.studyNoise.score} / ${dims.studyNoise.max} pts</strong>
+            </div>
+            <div class="vibe-progress-track">
+              <div class="vibe-progress-fill ${dims.studyNoise.score >= 20 ? 'super' : 'mismatched'}" style="width: ${(dims.studyNoise.score / dims.studyNoise.max) * 100}%;"></div>
+            </div>
+          </div>
+
+          <div class="vibe-progress-container">
+            <div class="vibe-progress-header">
+              <span>🎯 Exam & Academic Synergy</span>
+              <strong>${dims.examSynergy.score} / ${dims.examSynergy.max} pts</strong>
+            </div>
+            <div class="vibe-progress-track">
+              <div class="vibe-progress-fill super" style="width: ${(dims.examSynergy.score / dims.examSynergy.max) * 100}%;"></div>
+            </div>
+          </div>
+
+          <div class="vibe-progress-container" style="margin-bottom: 0;">
+            <div class="vibe-progress-header">
+              <span>🥗 Dietary Ethics</span>
+              <strong>${dims.diet.score} / ${dims.diet.max} pts</strong>
+            </div>
+            <div class="vibe-progress-track">
+              <div class="vibe-progress-fill ${dims.diet.score >= 12 ? 'great' : 'mismatched'}" style="width: ${(dims.diet.score / dims.diet.max) * 100}%;"></div>
+            </div>
+          </div>
+        </div>
+      ` : ''}
+
+      <!-- Synergies and Frictions -->
+      <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px;">
+        ${synergies.map(syn => `
+          <div class="vibe-synergy-item">
+            <span>✨</span>
+            <span>${syn}</span>
+          </div>
+        `).join('')}
+
+        ${frictions.map(fric => `
+          <div class="vibe-friction-item">
+            <span>⚠️</span>
+            <span>${fric}</span>
+          </div>
+        `).join('')}
+      </div>
+
+      <!-- Core Student Facts -->
       <div style="display: flex; flex-direction: column; gap: 8px; font-size: 12px; margin-bottom: 16px;">
         <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding-bottom: 6px;">
           <span style="color: var(--text-muted);">🎯 Course / Aspirant</span>
@@ -1416,12 +1511,8 @@ const GharDekho = (() => {
       <div style="margin-bottom: 16px;">
         <div style="font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">Lifestyle & Study Habits:</div>
         <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-          ${prof.habits.map(h => `<span class="vibe-tag-badge">${h}</span>`).join('')}
+          ${(prof.habits || []).map(h => `<span class="vibe-tag-badge">${h}</span>`).join('')}
         </div>
-      </div>
-
-      <div style="background: var(--bg-surface-raised); border-radius: var(--radius-sm); padding: 8px 10px; font-size: 10px; color: var(--text-muted); line-height: 1.4; margin-bottom: 14px;">
-        🔒 <b>Zero Exploitation Guarantee:</b> Profile shared with explicit opt-in consent solely for student & professional roommate lifestyle compatibility.
       </div>
 
       <button class="btn-primary" style="width: 100%;" onclick="GharDekho.closeSubModal()">
@@ -1430,6 +1521,236 @@ const GharDekho = (() => {
     `;
 
     el.subModal.classList.add('active');
+  }
+
+  // Slice P7: Room Aggregate Vibe Modal
+  async function openRoomAggregateVibe(propertyId, roomId) {
+    const p = state.properties.find(item => item.id === propertyId);
+    if (!p) return;
+    const room = p.rooms.find(r => r.id === roomId);
+    if (!room) return;
+    if (!el.subModal || !el.subModalContent) return;
+
+    el.subModalContent.innerHTML = `
+      <div style="padding: 20px; text-align: center;">
+        <div style="font-size: 28px; animation: spin 1s linear infinite;">⏳</div>
+        <div style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">Analyzing Roommates Synergy Radar...</div>
+      </div>
+    `;
+    el.subModal.classList.add('active');
+
+    try {
+      const res = await fetch(`/api/roommates/rooms/${propertyId}/${roomId}/vibe-check`);
+      const json = await res.json();
+      if (!res.ok || !json.success) throw new Error(json.message || 'Failed to fetch room vibe');
+
+      const data = json.data;
+      const score = data.overallRoomVibe;
+      const matchTier = data.matchLevel;
+      const breakdowns = data.occupantBreakdowns || [];
+
+      el.subModalContent.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+          <div>
+            <span style="font-size: 10px; font-weight: 700; color: var(--color-student); text-transform: uppercase; letter-spacing: 0.5px;">
+              🏠 Room Collective Vibe Radar
+            </span>
+            <h3 style="font-family: var(--font-display); font-size: 17px; color: var(--text-primary); margin-top: 2px;">
+              ${room.label || 'Shared PG Room'}
+            </h3>
+          </div>
+          <button style="background: none; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer; padding: 0 4px;" onclick="GharDekho.closeSubModal()">✕</button>
+        </div>
+
+        <div style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(16, 185, 129, 0.12)); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: var(--radius-md); padding: 14px; margin-bottom: 14px; text-align: center;">
+          <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Overall Room Compatibility</div>
+          <div style="font-size: 32px; font-weight: 800; color: var(--color-student); font-family: var(--font-mono); margin: 4px 0;">${score}%</div>
+          <div style="font-size: 13px; font-weight: 700; color: var(--text-primary);">${matchTier}</div>
+          <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">${data.roomSummary || `Evaluated against ${data.occupiedSlotsCount} current student occupants`}</div>
+        </div>
+
+        ${data.aggregatedSynergies && data.aggregatedSynergies.length > 0 ? `
+          <div style="margin-bottom: 12px;">
+            <div style="font-size: 11px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">Room-Wide Synergies:</div>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              ${data.aggregatedSynergies.map(s => `
+                <div class="vibe-synergy-item"><span>✨</span><span>${s}</span></div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+
+        ${data.aggregatedFrictions && data.aggregatedFrictions.length > 0 ? `
+          <div style="margin-bottom: 14px;">
+            <div style="font-size: 11px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">Potential Friction Points:</div>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              ${data.aggregatedFrictions.map(f => `
+                <div class="vibe-friction-item"><span>⚠️</span><span>${f}</span></div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+
+        <!-- Occupants Grid -->
+        ${breakdowns.length > 0 ? `
+          <div style="margin-bottom: 16px;">
+            <div style="font-size: 11px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">Current Roommates Breakdown:</div>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              ${breakdowns.map(b => `
+                <div style="background: var(--bg-surface-raised); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 8px 10px; display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <strong style="font-size: 12px; color: var(--text-primary);">${b.occupantName}</strong>
+                    <div style="font-size: 10px; color: var(--text-muted);">${b.occupantHometown}</div>
+                  </div>
+                  <div style="text-align: right;">
+                    <div style="font-size: 13px; font-weight: 700; color: var(--color-student);">${b.overallScore}%</div>
+                    <div style="font-size: 9px; color: var(--text-secondary);">${b.matchLevel}</div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+
+        <button class="btn-primary" style="width: 100%;" onclick="GharDekho.closeSubModal()">
+          Looks Great
+        </button>
+      `;
+    } catch (err) {
+      el.subModalContent.innerHTML = `
+        <div style="padding: 16px; text-align: center;">
+          <div style="font-size: 20px; color: var(--color-danger); margin-bottom: 8px;">⚠️ Vibe Check Error</div>
+          <div style="font-size: 12px; color: var(--text-muted);">${err.message}</div>
+          <button class="btn-primary" style="margin-top: 14px;" onclick="GharDekho.closeSubModal()">Close</button>
+        </div>
+      `;
+    }
+  }
+
+  // Slice P7: Personal Study Habits Customization Modal
+  async function openMyHabitsModal() {
+    if (!el.subModal || !el.subModalContent) return;
+
+    let profile = {
+      targetExam: 'JEE',
+      sleepSchedule: 'early_bird',
+      studyNoisePreference: 'silent',
+      diet: 'pure_veg',
+      cleanlinessLevel: 4
+    };
+
+    try {
+      const res = await fetch('/api/roommates/profile/me');
+      if (res.ok) {
+        const json = await res.json();
+        if (json.data) profile = { ...profile, ...json.data };
+      }
+    } catch (e) {
+      // Use defaults
+    }
+
+    el.subModalContent.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+        <div>
+          <span style="font-size: 10px; font-weight: 700; color: var(--color-student); text-transform: uppercase; letter-spacing: 0.5px;">
+            ⚙️ My Study Habits & Vibe Profile
+          </span>
+          <h3 style="font-family: var(--font-display); font-size: 17px; color: var(--text-primary); margin-top: 2px;">
+            Personalize Your Roommate Matching
+          </h3>
+        </div>
+        <button style="background: none; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer; padding: 0 4px;" onclick="GharDekho.closeSubModal()">✕</button>
+      </div>
+
+      <form id="habitsProfileForm" onsubmit="GharDekho.saveMyHabits(event)" style="display: flex; flex-direction: column; gap: 12px; font-size: 12px;">
+        <div>
+          <label style="display: block; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px;">Target Exam / Academic Focus:</label>
+          <select id="habitsExam" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); background: var(--bg-surface); color: var(--text-primary);">
+            <option value="JEE" ${profile.targetExam === 'JEE' ? 'selected' : ''}>JEE Main & Advanced 💻</option>
+            <option value="NEET" ${profile.targetExam === 'NEET' ? 'selected' : ''}>NEET / Medical 🩺</option>
+            <option value="UPSC" ${profile.targetExam === 'UPSC' || profile.targetExam === 'GOVT' ? 'selected' : ''}>UPSC / Govt Services 🇮🇳</option>
+            <option value="COLLEGE" ${profile.targetExam === 'COLLEGE' ? 'selected' : ''}>College Degree / Tech 🎓</option>
+            <option value="GENERAL" ${profile.targetExam === 'GENERAL' ? 'selected' : ''}>Other Professional 💼</option>
+          </select>
+        </div>
+
+        <div>
+          <label style="display: block; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px;">Sleep Routine:</label>
+          <select id="habitsSleep" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); background: var(--bg-surface); color: var(--text-primary);">
+            <option value="early_bird" ${profile.sleepSchedule === 'early_bird' ? 'selected' : ''}>Early Bird 🌅 (Sleep 10:30 PM, Wake 5:30 AM)</option>
+            <option value="night_owl" ${profile.sleepSchedule === 'night_owl' ? 'selected' : ''}>Night Owl 🦉 (Study till 1:30 AM+, Wake 8:30 AM)</option>
+            <option value="balanced" ${profile.sleepSchedule === 'balanced' ? 'selected' : ''}>Balanced / Flexible ⚖️ (11:30 PM - 7:00 AM)</option>
+          </select>
+        </div>
+
+        <div>
+          <label style="display: block; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px;">Study Noise Preference:</label>
+          <select id="habitsNoise" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); background: var(--bg-surface); color: var(--text-primary);">
+            <option value="silent" ${profile.studyNoisePreference === 'silent' ? 'selected' : ''}>Pin Drop Silence 📚 (Quiet hours respected)</option>
+            <option value="mild" ${profile.studyNoisePreference === 'mild' ? 'selected' : ''}>Soft Music / Lo-Fi OK 🎧</option>
+            <option value="discussion" ${profile.studyNoisePreference === 'discussion' ? 'selected' : ''}>Group Doubts & Discussion 🗣️</option>
+          </select>
+        </div>
+
+        <div>
+          <label style="display: block; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px;">Dietary Habit:</label>
+          <select id="habitsDiet" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); background: var(--bg-surface); color: var(--text-primary);">
+            <option value="pure_veg" ${profile.diet === 'pure_veg' ? 'selected' : ''}>Strictly Pure Vegetarian 🥗</option>
+            <option value="eggetarian" ${profile.diet === 'eggetarian' ? 'selected' : ''}>Eggetarian 🥚</option>
+            <option value="non_veg_ok" ${profile.diet === 'non_veg_ok' ? 'selected' : ''}>Non-Vegetarian Friendly 🍗</option>
+          </select>
+        </div>
+
+        <div>
+          <label style="display: block; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px;">Room Cleanliness Level (1 to 5):</label>
+          <input type="range" id="habitsCleanliness" min="1" max="5" value="${profile.cleanlinessLevel || 4}" style="width: 100%;">
+          <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted);">
+            <span>Casual (1)</span>
+            <span>Moderate (3)</span>
+            <span>Spotless (5)</span>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-primary" style="width: 100%; margin-top: 8px;">
+          Save Habits & Recalculate Vibe ✨
+        </button>
+      </form>
+    `;
+
+    el.subModal.classList.add('active');
+  }
+
+  // Save student habits
+  async function saveMyHabits(event) {
+    if (event) event.preventDefault();
+    const targetExam = document.getElementById('habitsExam')?.value || 'JEE';
+    const sleepSchedule = document.getElementById('habitsSleep')?.value || 'early_bird';
+    const studyNoisePreference = document.getElementById('habitsNoise')?.value || 'silent';
+    const diet = document.getElementById('habitsDiet')?.value || 'pure_veg';
+    const cleanlinessLevel = Number(document.getElementById('habitsCleanliness')?.value) || 4;
+
+    try {
+      const res = await fetch('/api/roommates/profile/me', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          targetExam,
+          sleepSchedule,
+          studyNoisePreference,
+          diet,
+          cleanlinessLevel
+        })
+      });
+
+      if (res.ok) {
+        showToast('Study habits saved! Compatibility scores updated ✨');
+        closeSubModal();
+      } else {
+        showToast('Failed to save habits profile');
+      }
+    } catch (e) {
+      showToast('Network error saving habits');
+    }
   }
 
   // Slice 4: Room Waitlist Modal
@@ -3988,6 +4309,9 @@ const GharDekho = (() => {
     confirmScheduledVisit,
     bookBed,
     openRoommateVibe,
+    openRoomAggregateVibe,
+    openMyHabitsModal,
+    saveMyHabits,
     openWaitlistModal,
     submitWaitlist,
     closeSubModal,

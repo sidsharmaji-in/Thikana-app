@@ -127,3 +127,4 @@ Phase 1: Alpha (Day -7 to Day -1) ───► Phase 2: Kota Beta (Day 1 to 14) 
 - Weekly analysis of search queries with 0 results to identify unserved coaching centers.
 - Conversion funnel analysis: Search → Property Detail → Bed Lock → Visit Scheduled.
 - Feedback triage meetings twice weekly to prioritize Post-MVP backlog items (Roommate compatibility matching, Hindi audio search).
+

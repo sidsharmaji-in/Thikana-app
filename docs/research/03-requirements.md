@@ -114,3 +114,4 @@
 | **Stolen stock photos and fake listings** | **High** | Retired via direct cloud media pipeline enforcing minimum 3 photos, MIME validation, and GharDekho trust watermark. |
 | **WhatsApp disintermediation** | **Medium** | Embraced rather than fought: native in-app chat with 1-click WhatsApp direct connect button. |
 | **DPDP Act 2023 Aadhaar compliance** | **High** | Retired by strictly masking all national IDs (`XXXXXXXX1234`) and storing zero raw biometric credentials. |
+

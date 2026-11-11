@@ -278,3 +278,4 @@ All endpoints return JSON wrapped with standard envelope and `X-Request-ID` trac
 4. **Automated Backups & Disaster Recovery:**
    - PostgreSQL WAL archiving to S3 bucket daily with 30-day retention.
    - Database restore drill rehearsed quarterly using automated Docker restore script.
+

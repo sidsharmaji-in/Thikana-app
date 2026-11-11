@@ -61,3 +61,4 @@ GharDekho MVP provides a fast, zero-brokerage mobile PWA for student coaching ac
 ## 5. What Could Not Be Verified
 
 - **Physical SMS Gateway Throughput Under High Network Congestion:** In local and CI environments, SMS OTP delivery was verified via deterministic mock dispatch and session stores. Physical telecommunication delivery latency over Indian DLT carrier networks under extreme regional festival congestion could not be physically benchmarked without live SMS credits.
+

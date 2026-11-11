@@ -45,3 +45,4 @@ Students and young working professionals relocating to Tier 1–3 Indian coachin
 ## 8. Open Questions
 1. Should Aadhaar DigiLocker verification be strictly mandatory for owners before publishing their first room listing?
 2. At what transaction milestone should Razorpay advance token booking fees (₹500 refundable token) be activated?
+

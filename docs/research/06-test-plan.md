@@ -164,3 +164,4 @@ GharDekho is classified as **Moderate-to-High Risk** due to:
   1. *Scenario 1 (Student):* Search for 2-sharing PG within 1.5 km of Allen Samarth; lock Bed 2 for 10 minutes; message owner to schedule a 5:00 PM visit.
   2. *Scenario 2 (Owner):* Log in via SMS OTP; list a 4-room PG with photos and water timing details; confirm student's visit request.
 - **Success Criteria:** 100% task completion rate without moderator intervention.
+

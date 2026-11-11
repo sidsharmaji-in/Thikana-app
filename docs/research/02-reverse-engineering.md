@@ -84,3 +84,4 @@ Stanza Living operates as a master-lease aggregator `[Documented]`. They sign lo
 - **Copy the Principle:** Clean bed-level allocation grid, transparent amenity chips, and frictionless mobile chat.
 - **Avoid:** Aggressive telemarketing calls, paywalled owner phone numbers, and mandatory expensive meal plans.
 - **Do Better:** Deliver a 100% free, hyperlocal student rental engine with verifiable Indian realities (Jal timing, Bijli backup, attached Western bath) and zero double-booking races.
+

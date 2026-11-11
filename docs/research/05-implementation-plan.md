@@ -229,3 +229,4 @@ Task: Implement Step 5.8: Production Hardening, Observability, Pino Logs & Docke
 Constraints: Pino JSON logging; X-Request-ID and X-Response-Time headers; /health/ready deep probe; multi-stage Dockerfile.
 Done when: test/sliceP6-observability-docker.test.js passes 63/63 tests; all 467 project tests green; Docker build succeeds.
 ```
+

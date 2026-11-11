@@ -75,3 +75,4 @@ The Indian student and migrant rental market comprises over 38 million higher ed
 | 3 | Kota student complaints on PG brokers | Reddit r/JEENEETards & Quora Kota threads | Fake deposits, water cut surprises, unreturned security advances | `[Documented]` | 2026-11 |
 | 4 | NoBroker shared room capabilities | NoBroker web portal inspection | Lacks bed-level status, only flat or private room listings | `[Observed]` | 2026-11 |
 | 5 | DPDP Act 2023 Aadhaar guidelines | UIDAI circular & MeitY compliance guidelines | Masked Aadhaar (first 8 digits hidden `XXXXXXXX1234`) mandatory | `[Documented]` | 2026-11 |
+
