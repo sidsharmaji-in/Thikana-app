@@ -1,3 +1,5 @@
+
+
 # PLAN — GharDhundo 🏠
 ### India's Trusted Rental Marketplace for Students & Working Professionals
 
@@ -884,4 +886,109 @@ Level 5 — Platform signal: "GharDhundo Verified" badge (manual review process)
 
 ---
 
-*This plan follows the pro-dev-studio methodology. Next: Choose design direction (A/B/C), then proceed to Slice 0 scaffold.*
+## 17. Production-Level Engineering Roadmap (Pro-Dev-Studio & Superpowers)
+
+### Overview & Gap Analysis
+
+While Slices 0 through 8 successfully proved all business logic, UI layouts, and user workflows with **227 passing automated tests**, transitioning GharDekho into a true **high-scale production platform** requires bridging the following core architectural gaps:
+
+| Capability | Current State (Prototype / MVP) | Target Production Standard |
+|---|---|---|
+| **Data Persistence** | In-memory JavaScript arrays (`let properties`, `let inquiries`) | PostgreSQL 16 + PostGIS extension via Prisma ORM with connection pooling |
+| **Geospatial Engine** | In-memory Haversine formula loop | PostGIS `ST_DWithin` and `ST_DistanceSphere` with GiST spatial indexes |
+| **Authentication** | Mock OTP + client-header role simulation | Real SMS OTP (Twilio / MSG91) + signed JWT (Access 15m + Refresh 7d in `HttpOnly, Secure` cookies) |
+| **Realtime Messaging** | HTTP polling and local state updates | Socket.io with Redis Pub/Sub adapter for instant chat, typing indicators, and read receipts |
+| **Concurrency & Slot Locking** | In-memory status assignment | Distributed Redis lock (Redlock / atomic slot reservation) preventing double-booking races |
+| **Media Pipeline** | Static Unsplash URLs in seed file | Cloudinary / AWS S3 presigned direct uploads with server MIME validation and WebP/AVIF compression |
+| **Backend Architecture** | Single monolithic `server/src/index.js` file (1,400 LOC) | Modular layered Express architecture (routes, controllers, services, middleware, models) |
+| **Observability** | `console.log` / raw console errors | Structured JSON logging (`pino`), Sentry error tracking, `/health/live` & `/health/ready` probes |
+| **E2E Quality Assurance** | HTTP request test scripts (`node server/test/*.js`) | Headless Playwright browser automation simulating complete user journeys |
+| **Container & CI/CD** | Basic single-stage Dockerfile | Multi-stage Docker build, `docker-compose.yml` (App + Postgres + Redis), GitHub Actions CI |
+
+---
+
+### Production Slices Breakdown
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                        GHARDEKHO PRODUCTION SLICES                     │
+├───────────────────┬───────────────────┬────────────────────────────────┤
+│ Slice P1          │ Slice P2          │ Slice P3                       │
+│ Modular Backend & │ Production Auth & │ Real-Time Engine &             │
+│ PostgreSQL / PostGIS│ Session Hardening │ Concurrency Bed Locks          │
+├───────────────────┼───────────────────┼────────────────────────────────┤
+│ Slice P4          │ Slice P5          │ Slice P6                       │
+│ Cloud Media & S3  │ Headless Playwright│ Observability, Sentry &        │
+│ Direct Uploads    │ E2E Automated Tests│ Production Docker Compose      │
+└───────────────────┴───────────────────┴────────────────────────────────┘
+```
+
+#### Slice P1: Modular Architecture & PostgreSQL + PostGIS Persistence
+- **Deliverables:**
+  - Decompose monolithic `server/src/index.js` into clean, testable layers:
+    - `server/src/routes/` (properties, inquiries, reviews, notifications, auth)
+    - `server/src/controllers/` (business logic)
+    - `server/src/services/` (geospatial query service, notification service)
+    - `server/src/middleware/` (rate limiter, security headers, auth guard)
+  - Define Prisma schema (`prisma/schema.prisma`):
+    - `User`, `Property`, `Room`, `BedSlot`, `Inquiry`, `Message`, `Review`, `Notification`, `SavedProperty`
+  - Implement dual-mode storage repository (Database Repository with Prisma + in-memory fallback for zero-dependency local test runs).
+  - PostGIS spatial indexing for high-speed sub-10ms radius search across 100,000+ listings.
+- **Verification:** All 227 existing tests pass without regressions on both in-memory and database modes.
+
+#### Slice P2: Production Authentication & Session Hardening
+- **Deliverables:**
+  - Real SMS OTP service with pluggable provider architecture (Twilio India, MSG91, and Local Mock Provider for development/CI).
+  - JWT token generation with key rotation:
+    - Short-lived Access Token (15 minutes) passed in `Authorization: Bearer <token>`
+    - Long-lived Refresh Token (7 days) stored in `HttpOnly, Secure, SameSite=Strict` cookie.
+  - Role-Based Access Control (RBAC) middleware verifying tenant vs. owner permissions.
+  - Aadhaar / DigiLocker verification stub with sandbox verification webhook.
+- **Verification:** Automated tests verifying OTP expiry (10 min), rate limiting on OTP requests, invalid OTP rejection, and role-protected endpoint rejection (401/403).
+
+#### Slice P3: Real-Time Communication & Concurrency Bed Locks
+- **Deliverables:**
+  - Socket.io server mounted alongside Express with room-based pub/sub channels (`chat:inq-101`, `property:prop-kota-01`).
+  - Redis Pub/Sub adapter allowing multi-node load balancing.
+  - WhatsApp-grade features:
+    - Instant real-time message delivery
+    - Typing indicators (`typing:start`, `typing:stop`)
+    - Read receipts (`message:read` with single/double ticks)
+  - Distributed Bed Slot Lock:
+    - When a tenant clicks "Reserve Bed Slot", a 10-minute temporary Redis lock is acquired.
+    - Prevents two students from reserving the same PG bed simultaneously during peak Kota admission season.
+- **Verification:** Automated concurrency test simulating two simultaneous reservation requests for the same bed slot, asserting exactly one succeeds with 200 and the second receives a 409 Conflict.
+
+#### Slice P4: Direct Cloud Media Upload Pipeline
+- **Deliverables:**
+  - Presigned direct upload endpoint (`POST /api/media/presign-upload`) generating secure, time-limited upload URLs for AWS S3 / Cloudinary.
+  - Client-side direct upload workflow: photos upload directly from browser/mobile to object storage without choking the backend Express server.
+  - Server-side image transformation webhook: auto-conversion to modern `.webp` and `.avif` formats, watermarking with GharDekho trust seal, and 3 standard thumbnails (120px mini, 480px card, 1200px full gallery).
+- **Verification:** Test uploading image files, verifying signature generation, MIME-type allowlist enforcement, and rejection of non-image extensions.
+
+#### Slice P5: Headless Playwright E2E Automated Test Suite & CI/CD
+- **Deliverables:**
+  - Playwright configuration (`playwright.config.js`) supporting desktop Chrome and mobile viewport (iPhone 14 / Pixel 7).
+  - 3 Core End-to-End User Journeys:
+    1. **Tenant Search & Booking Flow:** Search Kota → Filter Budget ₹4,000 → Click listing → Reserve Bed Slot 2 → Verify confirmation modal.
+    2. **Owner Property Listing Flow:** Switch to Owner → Open listing wizard → Complete 4-step form → Publish → Verify new property card appears on explore feed.
+    3. **Live Chat & Scheduling Flow:** Open inquiry thread → Send message → Verify message bubble appears → Schedule visit for tomorrow 11:00 AM.
+  - GitHub Actions CI workflow (`.github/workflows/ci.yml`) running linting, 227 integration tests, and headless Playwright runs on every PR.
+- **Verification:** All Playwright specs run headless and pass with zero flakiness.
+
+#### Slice P6: Production Observability, Sentry & Docker Compose Deployment
+- **Deliverables:**
+  - Structured JSON logging using `pino` with correlation/request IDs (`x-request-id`).
+  - Sentry SDK integration for frontend error boundaries and backend unhandled rejection capture.
+  - Production readiness probes:
+    - `GET /health/live`: Process liveness check
+    - `GET /health/ready`: Deep dependency check (PostgreSQL pool status, Redis ping, disk space)
+  - Production `docker-compose.yml`:
+    - `ghardekho-app`: Multi-stage Node.js Alpine container running as non-root user
+    - `ghardekho-db`: PostgreSQL 16 + PostGIS official image
+    - `ghardekho-redis`: Redis 7 Alpine with persistent AOF
+- **Verification:** `docker compose up --build` boots the entire stack from scratch and passes health checks.
+
+---
+
+*This plan follows the pro-dev-studio methodology.*

@@ -3568,6 +3568,15 @@ const GharDekho = (() => {
     showToast(next === 'dark' ? '🌙 Dark Mode enabled' : '☀️ Light Mode enabled');
   }
 
+  function toggleLanguage() {
+    const currentLang = document.documentElement.getAttribute('lang') || 'en';
+    const nextLang = currentLang === 'en' ? 'hi' : 'en';
+    document.documentElement.setAttribute('lang', nextLang);
+    const labelEl = document.getElementById('langNameLabel');
+    if (labelEl) labelEl.textContent = nextLang === 'hi' ? 'English' : 'हिंदी';
+    showToast(nextLang === 'hi' ? '🌐 भाषा बदली गई: हिंदी (Hinglish Support Active)' : '🌐 Language set to English');
+  }
+
   function initTheme() {
     let saved = 'light';
     try {
@@ -3652,6 +3661,7 @@ const GharDekho = (() => {
     openInquiryModal,
     toggleViewport,
     toggleDarkMode,
+    toggleLanguage,
     cycleTheme,
     applyTheme
   };
