@@ -1,0 +1,340 @@
+// GharDekho - Production PostgreSQL + PostGIS Schema
+// Prisma Schema Definition for Scalable Indian Rental Marketplace
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [postgis()]
+}
+
+enum Role {
+  TENANT
+  OWNER
+  ADMIN
+}
+
+enum GenderPreference {
+  BOYS
+  GIRLS
+  FAMILY
+  ANY
+}
+
+enum PropertyType {
+  PG
+  STUDENT_HOSTEL
+  SHARED_ROOM
+  ONE_RK
+  ONE_BHK
+  TWO_BHK
+}
+
+enum SlotStatus {
+  VACANT
+  RESERVED
+  OCCUPIED
+  MAINTENANCE
+}
+
+enum InquiryStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum NotificationPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+model User {
+  id               String          @id @default(uuid())
+  phone            String          @unique
+  fullName         String
+  role             Role            @default(TENANT)
+  email            String?         @unique
+  avatarUrl        String?
+  isKycVerified    Boolean         @default(false)
+  aadhaarNumber    String?
+  city             String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  properties       Property[]      @relation("OwnerProperties")
+  inquiries        Inquiry[]       @relation("TenantInquiries")
+  reviews          Review[]        @relation("TenantReviews")
+  savedProperties  SavedProperty[]
+  notifications    Notification[]
+  preferences      UserPreference?
+
+  @@index([phone])
+  @@index([role])
+}
+
+model Property {
+  id                String            @id @default(uuid())
+  title             String
+  description       String
+  address           String
+  locality          String
+  city              String
+  state             String
+  pincode           String
+  latitude          Float
+  longitude         Float
+  propertyType      PropertyType      @default(PG)
+  genderPreference  GenderPreference  @default(ANY)
+  minPrice          Int
+  maxPrice          Int
+  isAvailable       Boolean           @default(true)
+  isVerifiedOwner   Boolean           @default(false)
+  responseRate      Int               @default(100)
+  responseTimeMins  Int               @default(15)
+  ownerId           String
+  owner             User              @relation("OwnerProperties", fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  photos            PropertyPhoto[]
+  amenities         PropertyAmenity?
+  rooms             Room[]
+  inquiries         Inquiry[]
+  reviews           Review[]
+  savedBy           SavedProperty[]
+  nearbyPlaces      NearbyPlace[]
+
+  @@index([city])
+  @@index([latitude, longitude])
+  @@index([minPrice, maxPrice])
+  @@index([genderPreference])
+  @@index([isAvailable])
+}
+
+model PropertyPhoto {
+  id         String   @id @default(uuid())
+  propertyId String
+  url        String
+  caption    String?
+  isCover    Boolean  @default(false)
+  orderIndex Int      @default(0)
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId])
+}
+
+model PropertyAmenity {
+  id                  String   @id @default(uuid())
+  propertyId          String   @unique
+  property            Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  waterSchedule       String   @default("24x7")
+  jalTimingAlert      String   @default("Uninterrupted")
+  powerBackup         String   @default("Full 24hr")
+  bathroomType        String   @default("Attached")
+  wifiSpeedMbps       Int      @default(100)
+  hasCctv             Boolean  @default(true)
+  hasLift             Boolean  @default(false)
+  hasFoodMess         Boolean  @default(false)
+  hasWashingMachine   Boolean  @default(true)
+  hasAirConditioner   Boolean  @default(false)
+  hasGeyserHotWater   Boolean  @default(true)
+  hasStudyDesk        Boolean  @default(true)
+  hasRoDrinkingWater  Boolean  @default(true)
+  hasBiometricGate    Boolean  @default(false)
+  curfewTime          String?
+}
+
+model Room {
+  id               String          @id @default(uuid())
+  propertyId       String
+  property         Property        @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  roomNumber       String
+  title            String          @default("Sharing Room")
+  maxOccupancy     Int             @default(2)
+  currentOccupancy Int             @default(0)
+  pricePerPerson   Int
+  depositMonths    Int             @default(1)
+  isAvailable      Boolean         @default(true)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  slots            BedSlot[]
+  waitlist         WaitlistEntry[]
+
+  @@index([propertyId])
+  @@index([maxOccupancy])
+}
+
+model BedSlot {
+  id                 String           @id @default(uuid())
+  roomId             String
+  room               Room             @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  slotNumber         Int
+  slotLabel          String
+  status             SlotStatus       @default(VACANT)
+  currentTenantName  String?
+  currentTenantPhone String?
+  reservedUntil      DateTime?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  roommateProfile    RoommateProfile?
+
+  @@index([roomId])
+  @@index([status])
+}
+
+model RoommateProfile {
+  id                 String   @id @default(uuid())
+  bedSlotId          String   @unique
+  bedSlot            BedSlot  @relation(fields: [bedSlotId], references: [id], onDelete: Cascade)
+  tenantName         String
+  examOrProfession   String
+  instituteOrCompany String
+  wakeSchedule       String   @default("Early Bird 🌅")
+  studyHabit         String   @default("Silent Study 📚")
+  dietPreference     String   @default("Vegetarian 🥗")
+  compatibilityScore Int      @default(95)
+}
+
+model WaitlistEntry {
+  id                 String   @id @default(uuid())
+  roomId             String
+  room               Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  tenantName         String
+  tenantPhone        String
+  preferredShiftDate String?
+  notes              String?
+  queuePosition      Int      @default(1)
+  isAssigned         Boolean  @default(false)
+  createdAt          DateTime @default(now())
+
+  @@index([roomId])
+}
+
+model NearbyPlace {
+  id         String   @id @default(uuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  name       String
+  category   String
+  distanceM  Int
+  walkMin    Int
+
+  @@index([propertyId])
+}
+
+model Inquiry {
+  id                 String        @id @default(uuid())
+  propertyId         String
+  property           Property      @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  tenantId           String?
+  tenant             User?         @relation("TenantInquiries", fields: [tenantId], references: [id])
+  ownerId            String
+  ownerName          String
+  ownerPhone         String
+  tenantName         String
+  tenantPhone        String
+  status             InquiryStatus @default(PENDING)
+  scheduledVisitDate String?
+  scheduledVisitTime String?
+  unreadCountTenant  Int           @default(0)
+  unreadCountOwner   Int           @default(1)
+  lastMessageAt      DateTime      @default(now())
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  messages           Message[]
+
+  @@index([propertyId])
+  @@index([tenantId])
+  @@index([ownerId])
+}
+
+model Message {
+  id         String   @id @default(uuid())
+  inquiryId  String
+  inquiry    Inquiry  @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  senderRole String
+  senderName String
+  text       String
+  timestamp  DateTime @default(now())
+  isRead     Boolean  @default(false)
+
+  @@index([inquiryId])
+}
+
+model Review {
+  id                 String    @id @default(uuid())
+  propertyId         String
+  property           Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  tenantId           String?
+  tenant             User?     @relation("TenantReviews", fields: [tenantId], references: [id])
+  tenantName         String
+  tenantPhone        String
+  rating             Int       @default(5)
+  title              String
+  comment            String
+  isVerifiedTenant   Boolean   @default(true)
+  stayDurationMonths Int       @default(6)
+  likesCount         Int       @default(0)
+  ownerResponseText  String?
+  ownerRespondedAt   DateTime?
+  createdAt          DateTime  @default(now())
+
+  @@index([propertyId])
+  @@index([rating])
+}
+
+model Notification {
+  id             String               @id @default(uuid())
+  userId         String?
+  user           User?                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipientRole  String               @default("tenant")
+  recipientPhone String
+  type           String
+  title          String
+  body           String
+  entityType     String               @default("property")
+  entityId       String
+  propertyId     String?
+  actionLabel    String               @default("View Details")
+  priority       NotificationPriority @default(NORMAL)
+  isRead         Boolean              @default(false)
+  createdAt      DateTime             @default(now())
+
+  @@index([userId])
+  @@index([recipientRole])
+  @@index([isRead])
+}
+
+model SavedProperty {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, propertyId])
+  @@index([userId])
+}
+
+model UserPreference {
+  id                 String   @id @default(uuid())
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  whatsappUpdates    Boolean  @default(true)
+  slotVacancyAlerts  Boolean  @default(true)
+  priceDropAlerts    Boolean  @default(true)
+  reviewReplies      Boolean  @default(true)
+  marketingEmails    Boolean  @default(false)
+  updatedAt          DateTime @updatedAt
+}
