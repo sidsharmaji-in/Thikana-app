@@ -980,18 +980,17 @@ While Slices 0 through 8 successfully proved all business logic, UI layouts, and
   - GitHub Actions CI workflow (`.github/workflows/ci.yml`) automating multi-version Node.js builds (20.x, 22.x), 386 integration tests, Playwright browser installations, background server startup, and artifact reporting on pull requests and pushes.
 - **Verification:** 18 automated headless Playwright E2E tests passing across Desktop and Mobile viewports (404 total platform tests).
 
-#### Slice P6: Production Observability, Sentry & Docker Compose Deployment
+#### Slice P6: Production Observability, Sentry & Docker Compose Deployment ✅ (Completed - 63 Tests)
 - **Deliverables:**
-  - Structured JSON logging using `pino` with correlation/request IDs (`x-request-id`).
-  - Sentry SDK integration for frontend error boundaries and backend unhandled rejection capture.
-  - Production readiness probes:
-    - `GET /health/live`: Process liveness check
-    - `GET /health/ready`: Deep dependency check (PostgreSQL pool status, Redis ping, disk space)
-  - Production `docker-compose.yml`:
-    - `ghardekho-app`: Multi-stage Node.js Alpine container running as non-root user
-    - `ghardekho-db`: PostgreSQL 16 + PostGIS official image
-    - `ghardekho-redis`: Redis 7 Alpine with persistent AOF
-- **Verification:** `docker compose up --build` boots the entire stack from scratch and passes health checks.
+  - Structured JSON logging (`logger.js`) adhering to Pino specification with levels (`info`, `warn`, `error`, `debug`), process PID, hostname, service name, and error stack serialization.
+  - Correlation ID and request tracing middleware (`tracing.js`) automatically propagating `X-Request-ID` and high-resolution `X-Response-Time` latency headers.
+  - Sentry exception tracking pipeline (`sentry.js`) with breadcrumb aggregation, contextual tags, and centralized Express error boundary.
+  - Kubernetes / Docker liveness probe (`GET /api/health/live`) reporting process memory (RSS, heap), uptime, Node runtime version, and PID.
+  - Deep dependency readiness probe (`GET /api/health/ready`) monitoring PostgreSQL database repository connectivity, bedLockService lease engine, realtime WebSocket hub connections, and storage filesystem writability.
+  - Operational telemetry endpoint (`GET /api/health/metrics`) exposing CPU core counts, free memory, active bed locks, and request counters.
+  - Production multi-stage `Dockerfile` (`builder` & minimal `runner`) running as unprivileged `USER node` with built-in container `HEALTHCHECK`.
+  - Production `docker-compose.yml` orchestrating the full stack (`ghardekho-app`, `ghardekho-db` with PostGIS 16 Alpine, and `ghardekho-redis` with persistent AOF storage and healthchecks).
+- **Verification:** 63 automated integration tests in `server/test/sliceP6-observability-docker.test.js` (449 backend integration tests + 18 Playwright E2E tests = 467 total platform tests passing, 0 failures).
 
 ---
 

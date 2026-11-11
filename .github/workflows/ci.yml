@@ -52,3 +52,4 @@ jobs:
           name: playwright-report-node-${{ matrix.node-version }}
           path: playwright-report/
           retention-days: 14
+

@@ -236,6 +236,19 @@ class BedLockService {
     return purged;
   }
 
+  getActiveLocksCount() {
+    this.purgeExpired();
+    return this.locks.size;
+  }
+
+  getStats() {
+    this.purgeExpired();
+    return {
+      activeLocks: this.locks.size,
+      leaseDurationSeconds: Math.round(this.leaseDurationMs / 1000)
+    };
+  }
+
   _clearAll() {
     this.locks.clear();
   }

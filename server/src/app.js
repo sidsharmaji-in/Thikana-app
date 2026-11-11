@@ -3,6 +3,8 @@ const cors = require('cors');
 const path = require('path');
 
 const securityHeaders = require('./middleware/security');
+const requestTracing = require('./middleware/tracing');
+const { errorHandler } = require('./utils/sentry');
 const propertiesRouter = require('./routes/properties');
 const slotsRouter = require('./routes/slots');
 const { reviewsRouter, propertyReviewsRouter } = require('./routes/reviews');
@@ -16,6 +18,9 @@ const realtimeRouter = require('./routes/realtime');
 const mediaRouter = require('./routes/media');
 
 const app = express();
+
+// Request Tracing & Correlation ID (Slice P6)
+app.use(requestTracing);
 
 // Core Middleware
 app.use(cors());
@@ -39,6 +44,9 @@ app.use('/api', healthRouter);
 // Serve Client Static Files and Uploads
 app.use('/uploads', express.static(path.join(__dirname, '../../uploads')));
 app.use(express.static(path.join(__dirname, '../../client')));
+
+// Centralized Error Boundary & Sentry Exception Pipeline (Slice P6)
+app.use(errorHandler);
 
 module.exports = app;
 

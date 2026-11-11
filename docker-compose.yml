@@ -1,0 +1,87 @@
+version: '3.8'
+
+# GharDekho Production Stack (App + PostGIS + Redis AOF)
+# Production Slice P6
+
+services:
+  ghardekho-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+    container_name: ghardekho-app
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - DATABASE_URL=postgresql://ghardekho_user:ghardekho_secure_2026@ghardekho-db:5432/ghardekho_prod?schema=public
+      - REDIS_URL=redis://:ghardekho_redis_2026@ghardekho-redis:6379
+      - MEDIA_STORAGE_PROVIDER=local
+      - JWT_ACCESS_SECRET=ghardekho-prod-jwt-secret-replace-in-env
+      - MEDIA_SIGNING_SECRET=ghardekho-media-secret-prod-2026
+    depends_on:
+      ghardekho-db:
+        condition: service_healthy
+      ghardekho-redis:
+        condition: service_healthy
+    volumes:
+      - media_uploads:/app/uploads
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:4000/api/health/live"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - ghardekho-network
+
+  ghardekho-db:
+    image: postgis/postgis:16-3.4-alpine
+    container_name: ghardekho-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ghardekho_user
+      POSTGRES_PASSWORD: ghardekho_secure_2026
+      POSTGRES_DB: ghardekho_prod
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ghardekho_user -d ghardekho_prod"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ghardekho-network
+
+  ghardekho-redis:
+    image: redis:7-alpine
+    container_name: ghardekho-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ghardekho_redis_2026
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "ghardekho_redis_2026", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ghardekho-network
+
+volumes:
+  pgdata:
+    driver: local
+  redisdata:
+    driver: local
+  media_uploads:
+    driver: local
+
+networks:
+  ghardekho-network:
+    driver: bridge
