@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const repository = require('../data/repository');
+const realtimeHub = require('../realtime/hub');
 const { rateLimiter } = require('../middleware/rateLimiter');
 const { sanitizeInput } = require('../middleware/sanitizer');
 
@@ -55,6 +56,12 @@ router.post('/:id/messages', rateLimiter, (req, res) => {
 
   if (!result) return res.status(404).json({ success: false, message: 'Inquiry thread not found' });
 
+  // Broadcast real-time message to active thread subscribers
+  realtimeHub.broadcast(`chat:${req.params.id}`, 'chat:message', {
+    inquiryId: req.params.id,
+    message: result.newMsg
+  });
+
   res.status(201).json({
     success: true,
     message: result.newMsg,
@@ -79,6 +86,13 @@ router.put('/:id/visit-status', (req, res) => {
   });
 
   if (!result) return res.status(404).json({ success: false, message: 'Inquiry thread not found' });
+
+  // Broadcast real-time visit status confirmation
+  realtimeHub.broadcast(`chat:${req.params.id}`, 'visit:status_updated', {
+    inquiryId: req.params.id,
+    status: result.inquiry.status,
+    message: result.statusText
+  });
 
   res.json({
     success: true,

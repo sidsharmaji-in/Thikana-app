@@ -1,13 +1,30 @@
 const express = require('express');
 const router = express.Router();
 const repository = require('../data/repository');
+const bedLockService = require('../services/bedLockService');
 const { sanitizeInput } = require('../middleware/sanitizer');
 
-// POST /api/properties/:id/book-slot - Bed / Slot booking (Slice 4 State Lock)
+// POST /api/properties/:id/book-slot - Bed / Slot booking (Slice 4 State Lock + Slice P3 Concurrency Check)
 router.post('/:id/book-slot', (req, res) => {
-  const { roomId, slotId, tenantName, tenantPhone, status = 'occupied', roommateProfile } = req.body;
+  const { roomId, slotId, tenantName, tenantPhone, status = 'occupied', roommateProfile, lockedBy } = req.body;
   
   const cleanTenantName = sanitizeInput(tenantName);
+  const identifier = lockedBy || tenantPhone || cleanTenantName;
+
+  // Intercept concurrent double-booking with lock engine
+  const lockCheck = bedLockService.validateAndConsumeLock(req.params.id, roomId, slotId, identifier);
+  if (!lockCheck.valid) {
+    if (lockCheck.retryAfter) {
+      res.setHeader('Retry-After', lockCheck.retryAfter);
+    }
+    return res.status(409).json({
+      success: false,
+      error: lockCheck.error,
+      retryAfter: lockCheck.retryAfter,
+      message: lockCheck.message
+    });
+  }
+
   const result = repository.bookSlot(req.params.id, {
     roomId,
     slotId,
@@ -30,6 +47,71 @@ router.post('/:id/book-slot', (req, res) => {
     message: `Bed ${slot.label || slot.slotId} successfully ${slot.status === 'reserved' ? 'reserved' : 'booked'} in ${room.label}! Owner notified.`,
     slot,
     room
+  });
+});
+
+// POST /api/properties/:id/rooms/:roomId/slots/:slotId/lock - Acquire temporary 10-min reservation lock lease
+router.post('/:id/rooms/:roomId/slots/:slotId/lock', (req, res) => {
+  const { lockedBy, tenantName, tenantPhone, leaseSeconds } = req.body || {};
+
+  const cleanTenantName = sanitizeInput(tenantName);
+  const result = bedLockService.acquireLock(req.params.id, req.params.roomId, req.params.slotId, {
+    lockedBy,
+    tenantName: cleanTenantName,
+    tenantPhone,
+    leaseSeconds
+  });
+
+  if (!result.success) {
+    const statusCode = result.status || (result.error === 'SLOT_TEMPORARILY_LOCKED' ? 409 : 400);
+    if (result.retryAfter) {
+      res.setHeader('Retry-After', result.retryAfter);
+    }
+    return res.status(statusCode).json({
+      success: false,
+      error: result.error,
+      retryAfter: result.retryAfter,
+      remainingSeconds: result.remainingSeconds,
+      lockedBy: result.lockedBy,
+      message: result.message
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    refreshed: result.refreshed,
+    lock: result.lock,
+    message: result.message
+  });
+});
+
+// POST /api/properties/:id/rooms/:roomId/slots/:slotId/release-lock - Release temporary bed lock early
+router.post('/:id/rooms/:roomId/slots/:slotId/release-lock', (req, res) => {
+  const { requestedBy } = req.body || {};
+  const result = bedLockService.releaseLock(req.params.id, req.params.roomId, req.params.slotId, requestedBy);
+
+  if (!result.success) {
+    return res.status(403).json({
+      success: false,
+      error: result.error,
+      message: result.message
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    message: result.message
+  });
+});
+
+// GET /api/properties/:id/rooms/:roomId/slots/:slotId/lock-status - Get live bed lock status
+router.get('/:id/rooms/:roomId/slots/:slotId/lock-status', (req, res) => {
+  const { currentUserId } = req.query;
+  const status = bedLockService.getLockStatus(req.params.id, req.params.roomId, req.params.slotId, currentUserId);
+
+  res.status(200).json({
+    success: true,
+    ...status
   });
 });
 

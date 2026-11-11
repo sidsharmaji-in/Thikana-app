@@ -12,6 +12,7 @@ const notificationsRouter = require('./routes/notifications');
 const syncRouter = require('./routes/sync');
 const healthRouter = require('./routes/health');
 const authRouter = require('./routes/auth');
+const realtimeRouter = require('./routes/realtime');
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.use(securityHeaders);
 
 // Mount API Route Modules
 app.use('/api/auth', authRouter);
+app.use('/api/realtime', realtimeRouter);
 app.use('/api/properties', propertiesRouter);
 app.use('/api/properties', slotsRouter);
 app.use('/api/properties', propertyReviewsRouter);
