@@ -11,4 +11,6 @@ dist/
 uploads/
 server/uploads/*
 !server/uploads/.gitkeep
+playwright-report/
+test-results/
 

@@ -970,15 +970,15 @@ While Slices 0 through 8 successfully proved all business logic, UI layouts, and
   - Media upload verification & completion endpoint (`POST /api/media/confirm`) issuing responsive formats: 120px micro-thumbnail, 480px card thumbnail, 1200px full gallery, and GharDekho Trust Watermark metadata.
 - **Verification:** 64 automated integration tests passing in `server/test/sliceP4-media-upload.test.js` (386 total suite tests).
 
-#### Slice P5: Headless Playwright E2E Automated Test Suite & CI/CD
+#### Slice P5: Headless Playwright E2E Automated Test Suite & CI/CD ✅ (Completed - 18 Tests)
 - **Deliverables:**
-  - Playwright configuration (`playwright.config.js`) supporting desktop Chrome and mobile viewport (iPhone 14 / Pixel 7).
+  - Playwright configuration (`playwright.config.js`) supporting Desktop Chrome and Mobile Pixel 7 viewports with webServer health probing and zero-flakiness sequential workers.
   - 3 Core End-to-End User Journeys:
-    1. **Tenant Search & Booking Flow:** Search Kota → Filter Budget ₹4,000 → Click listing → Reserve Bed Slot 2 → Verify confirmation modal.
-    2. **Owner Property Listing Flow:** Switch to Owner → Open listing wizard → Complete 4-step form → Publish → Verify new property card appears on explore feed.
-    3. **Live Chat & Scheduling Flow:** Open inquiry thread → Send message → Verify message bubble appears → Schedule visit for tomorrow 11:00 AM.
-  - GitHub Actions CI workflow (`.github/workflows/ci.yml`) running linting, 227 integration tests, and headless Playwright runs on every PR.
-- **Verification:** All Playwright specs run headless and pass with zero flakiness.
+    1. **Tenant Search & Booking Flow (`01-tenant-search-booking.spec.js`):** Search bar, Kota educational hub filter, hyperlocal Indian amenity cards (Jal timing, Bijli backup, attached bath), and bed slot reservation.
+    2. **Owner Property Listing Flow (`02-owner-listing-wizard.spec.js`):** Role switch to Owner, Makan Maalik dashboard metrics, 5-step listing wizard, and dynamic live property publish.
+    3. **Live Chat & Scheduling Flow (`03-chat-and-scheduling.spec.js`):** Inquiry thread discovery, real-time message sending, conversation timeline updates, and room visit schedule confirmation.
+  - GitHub Actions CI workflow (`.github/workflows/ci.yml`) automating multi-version Node.js builds (20.x, 22.x), 386 integration tests, Playwright browser installations, background server startup, and artifact reporting on pull requests and pushes.
+- **Verification:** 18 automated headless Playwright E2E tests passing across Desktop and Mobile viewports (404 total platform tests).
 
 #### Slice P6: Production Observability, Sentry & Docker Compose Deployment
 - **Deliverables:**

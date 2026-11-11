@@ -382,3 +382,4 @@ module.exports = {
   MAX_FILE_SIZE_BYTES,
   UPLOADS_DIR
 };
+
