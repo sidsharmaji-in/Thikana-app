@@ -14,3 +14,4 @@ function sanitizeInput(str) {
 }
 
 module.exports = { sanitizeInput };
+

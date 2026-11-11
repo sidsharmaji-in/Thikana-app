@@ -338,3 +338,4 @@ model UserPreference {
   marketingEmails    Boolean  @default(false)
   updatedAt          DateTime @updatedAt
 }
+

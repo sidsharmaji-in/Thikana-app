@@ -113,6 +113,46 @@ let reviews = [
 
 let savedProperties = new Set(['prop-kota-01']);
 
+// Slice P2: User & Session Storage
+let users = [
+  {
+    id: "user-tenant-01",
+    phone: "+918899011223",
+    fullName: "Vikas Meena",
+    role: "tenant",
+    email: "vikas.meena@allen.in",
+    city: "Kota",
+    isKycVerified: true,
+    aadhaarNumber: "XXXX-XXXX-4210",
+    createdAt: "2026-10-01T10:00:00.000Z"
+  },
+  {
+    id: "user-owner-01",
+    phone: "+919829000000",
+    fullName: "Ramesh Sharma",
+    role: "owner",
+    email: "ramesh.sharma@pgkota.com",
+    city: "Kota",
+    isKycVerified: true,
+    aadhaarNumber: "XXXX-XXXX-8821",
+    createdAt: "2026-09-01T10:00:00.000Z"
+  },
+  {
+    id: "user-admin-01",
+    phone: "+919999900000",
+    fullName: "Platform Administrator",
+    role: "admin",
+    email: "admin@ghardekho.in",
+    city: "New Delhi",
+    isKycVerified: true,
+    aadhaarNumber: "XXXX-XXXX-0001",
+    createdAt: "2026-01-01T00:00:00.000Z"
+  }
+];
+
+const otpStore = new Map();
+const refreshTokens = new Map();
+
 let notificationPreferences = {
   whatsappUpdates: true,
   slotVacancyAlerts: true,
@@ -1022,10 +1062,144 @@ const repository = {
     };
   },
 
+  // Slice P2: Authentication & User Management
+  createOrUpdateOtp(phone, code, ttlSeconds = 600) {
+    const now = Date.now();
+    const existing = otpStore.get(phone) || { requestHistory: [] };
+
+    // Rate limit: max 3 requests in 5 minutes
+    const fiveMinutesAgo = now - 5 * 60 * 1000;
+    const recentRequests = existing.requestHistory.filter(t => t > fiveMinutesAgo);
+
+    if (recentRequests.length >= 3) {
+      return {
+        success: false,
+        error: 'RATE_LIMIT_EXCEEDED',
+        message: 'Too many OTP requests for this phone number. Please wait 5 minutes before trying again.'
+      };
+    }
+
+    recentRequests.push(now);
+    const expiresAt = now + ttlSeconds * 1000;
+
+    otpStore.set(phone, {
+      code,
+      expiresAt,
+      attempts: 0,
+      requestHistory: recentRequests
+    });
+
+    return {
+      success: true,
+      expiresAt: new Date(expiresAt).toISOString()
+    };
+  },
+
+  verifyOtp(phone, code) {
+    const now = Date.now();
+    const record = otpStore.get(phone);
+
+    if (!record) {
+      return { success: false, error: 'OTP_NOT_FOUND', message: 'No active OTP found. Please request a new OTP.' };
+    }
+
+    if (now > record.expiresAt) {
+      otpStore.delete(phone);
+      return { success: false, error: 'OTP_EXPIRED', message: 'OTP has expired. Please request a new verification code.' };
+    }
+
+    if (record.attempts >= 5) {
+      otpStore.delete(phone);
+      return { success: false, error: 'MAX_ATTEMPTS_EXCEEDED', message: 'Too many incorrect attempts. Please request a new OTP.' };
+    }
+
+    if (record.code !== code) {
+      record.attempts++;
+      return {
+        success: false,
+        error: 'INVALID_OTP',
+        message: `Incorrect verification code. ${5 - record.attempts} attempts remaining.`
+      };
+    }
+
+    // Success: consume OTP so it cannot be re-used
+    otpStore.delete(phone);
+    return { success: true };
+  },
+
+  findUserByPhone(phone) {
+    return users.find(u => u.phone === phone) || null;
+  },
+
+  findUserById(id) {
+    return users.find(u => u.id === id) || null;
+  },
+
+  createUser({ phone, fullName, role = 'tenant', city = 'Kota', email = null }) {
+    const newUser = {
+      id: `user-${Date.now()}`,
+      phone,
+      fullName: fullName || 'GharDekho Resident',
+      role: role || 'tenant',
+      email,
+      city,
+      isKycVerified: false,
+      aadhaarNumber: null,
+      createdAt: new Date().toISOString()
+    };
+    users.unshift(newUser);
+    return newUser;
+  },
+
+  updateUser(id, updates = {}) {
+    const user = users.find(u => u.id === id);
+    if (!user) return null;
+
+    if (updates.fullName !== undefined) user.fullName = updates.fullName;
+    if (updates.email !== undefined) user.email = updates.email;
+    if (updates.city !== undefined) user.city = updates.city;
+    if (updates.role !== undefined) user.role = updates.role;
+
+    return user;
+  },
+
+  storeRefreshToken(token, userId, ttlDays = 7) {
+    const expiresAt = Date.now() + ttlDays * 24 * 60 * 60 * 1000;
+    refreshTokens.set(token, { userId, expiresAt });
+  },
+
+  isValidRefreshToken(token) {
+    if (!token || !refreshTokens.has(token)) return false;
+    const record = refreshTokens.get(token);
+    if (Date.now() > record.expiresAt) {
+      refreshTokens.delete(token);
+      return false;
+    }
+    return record;
+  },
+
+  revokeRefreshToken(token) {
+    return refreshTokens.delete(token);
+  },
+
+  setUserKyc(userId, { documentType, documentNumberLast4 }) {
+    const user = users.find(u => u.id === userId);
+    if (!user) return null;
+
+    user.isKycVerified = true;
+    user.kycDocumentType = documentType || 'Aadhaar';
+    user.aadhaarNumber = `XXXX-XXXX-${documentNumberLast4}`;
+    user.kycVerifiedAt = new Date().toISOString();
+
+    return user;
+  },
+
   // Reset helper for clean testing
   _resetState() {
     properties = JSON.parse(JSON.stringify(initialProperties));
     savedProperties = new Set(['prop-kota-01']);
+    otpStore.clear();
+    refreshTokens.clear();
   }
 };
 

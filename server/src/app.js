@@ -11,6 +11,7 @@ const savedRouter = require('./routes/saved');
 const notificationsRouter = require('./routes/notifications');
 const syncRouter = require('./routes/sync');
 const healthRouter = require('./routes/health');
+const authRouter = require('./routes/auth');
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.use(express.json());
 app.use(securityHeaders);
 
 // Mount API Route Modules
+app.use('/api/auth', authRouter);
 app.use('/api/properties', propertiesRouter);
 app.use('/api/properties', slotsRouter);
 app.use('/api/properties', propertyReviewsRouter);
@@ -34,3 +36,4 @@ app.use('/api', healthRouter);
 app.use(express.static(path.join(__dirname, '../../client')));
 
 module.exports = app;
+

@@ -140,3 +140,4 @@ router.post('/:id/rooms/:roomId/waitlist/:waitlistId/assign', (req, res) => {
 });
 
 module.exports = router;
+
