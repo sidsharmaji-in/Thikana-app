@@ -946,18 +946,19 @@ While Slices 0 through 8 successfully proved all business logic, UI layouts, and
   - Aadhaar / DigiLocker verification stub with sandbox verification webhook.
 - **Verification:** All tests passed (46 new tests, 292 total suite tests).
 
-#### Slice P3: Real-Time Communication & Concurrency Bed Locks
+#### Slice P3: Real-Time Communication & Concurrency Bed Locks ✅ (Completed - 30 Tests)
 - **Deliverables:**
-  - Socket.io server mounted alongside Express with room-based pub/sub channels (`chat:inq-101`, `property:prop-kota-01`).
-  - Redis Pub/Sub adapter allowing multi-node load balancing.
+  - WebSocket (`ws`) real-time pub/sub event hub mounted on HTTP server with channel subscriptions (`chat:inq-101`, `property:prop-kota-01`).
+  - Server-Sent Events (SSE) fallback stream (`GET /api/realtime/stream?clientId=...`) for firewall-restricted networks.
   - WhatsApp-grade features:
-    - Instant real-time message delivery
-    - Typing indicators (`typing:start`, `typing:stop`)
-    - Read receipts (`message:read` with single/double ticks)
-  - Distributed Bed Slot Lock:
-    - When a tenant clicks "Reserve Bed Slot", a 10-minute temporary Redis lock is acquired.
-    - Prevents two students from reserving the same PG bed simultaneously during peak Kota admission season.
-- **Verification:** Automated concurrency test simulating two simultaneous reservation requests for the same bed slot, asserting exactly one succeeds with 200 and the second receives a 409 Conflict.
+    - Real-time message exchange on `POST /api/inquiries/:id/messages`
+    - Typing indicators (`chat:typing`) with client timeout
+    - Read receipts and visit status updates (`PUT /api/inquiries/:id/visit-status`)
+  - Distributed Bed Slot Lock Engine (`bedLockService.js`):
+    - 10-minute temporary lease hold (`POST /api/properties/:id/rooms/:roomId/slots/:slotId/lock`)
+    - Prevents double-booking race conditions during peak Kota admission season (HTTP 409 Conflict with standard `Retry-After` header)
+    - Early release endpoint and lease auto-expiration eviction loop
+- **Verification:** 30 automated integration tests passing in `server/test/sliceP3-realtime-locks.test.js` (322 total suite tests).
 
 #### Slice P4: Direct Cloud Media Upload Pipeline
 - **Deliverables:**
