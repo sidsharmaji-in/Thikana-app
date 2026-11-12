@@ -18,6 +18,7 @@ const realtimeRouter = require('./routes/realtime');
 const mediaRouter = require('./routes/media');
 const roommatesRouter = require('./routes/roommates');
 const paymentsRouter = require('./routes/payments');
+const messRouter = require('./routes/mess');
 
 const app = express();
 
@@ -35,6 +36,7 @@ app.use('/api/realtime', realtimeRouter);
 app.use('/api/media', mediaRouter);
 app.use('/api/roommates', roommatesRouter);
 app.use('/api/payments', paymentsRouter);
+app.use('/api/mess', messRouter);
 app.use('/api/properties', propertiesRouter);
 app.use('/api/properties', slotsRouter);
 app.use('/api/properties', propertyReviewsRouter);

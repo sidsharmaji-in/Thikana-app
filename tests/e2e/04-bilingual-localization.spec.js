@@ -64,3 +64,4 @@ test.describe('Journey 4: Bilingual Hindi / English UI Localization', () => {
     await expect(page.locator('.brand-name')).toHaveText('GharDekho');
   });
 });
+

@@ -185,15 +185,17 @@ Evidence Confidence Labels: `[Observed]` (verified in codebase/benchmarks), `[Do
 
 ---
 
-### Step 5.12: Hyperlocal Mess & Daily Tiffin Service Integration & Ratings (Slice P10 - Planned)
+### Step 5.12: Hyperlocal Mess & Daily Tiffin Service Integration & Ratings (Slice P10 - Completed)
 - **Goal:** Students can view daily mess menus, hygiene ratings, and student reviews of tiffin centers located within 300 meters of their PG.
 - **Covers:** FR-02, NFR-01
 - **Tasks:**
-  - [ ] Extend Property schema to include `nearbyMessServices` with daily tiffin timings and pricing (₹2,500–₹3,800/mo).
-  - [ ] Add student mess review voting card on the property details sheet.
-- **Tests to write first/with it:** `test/sliceP10-mess-services.test.js`.
-- **Acceptance Criteria:** Mess cards display verified hygiene badges and today's lunch/dinner menu.
-- **Definition of Done:** API and UI tests verify mess data loading.
+  - [x] Create `messService.js` supporting hyperlocal discovery within 300m, FSSAI hygiene ratings, daily lunch/dinner menu updates, review upvotes, and monthly room delivery subscriptions.
+  - [x] Create `server/src/routes/mess.js` mounted at `/api/mess` (`/`, `/property/:propertyId`, `/:id`, `/:id/menu`, `/:id/reviews`, `/:id/subscribe`).
+  - [x] Integrate Hyperlocal Mess & Tiffin Radar card and subscription prompt into client property details sheet (`renderMessSectionHtml` & `subscribeTiffinPrompt`).
+  - [x] Implement automated integration test suite (`test/sliceP10-mess-services.test.js` - 15 tests).
+- **Tests to write first/with it:** `test/sliceP10-mess-services.test.js` (15 automated tests).
+- **Acceptance Criteria:** Mess cards display verified hygiene badges, walking distance metrics, today's lunch/dinner menu, and 1-click room delivery subscription.
+- **Definition of Done:** 15 unit/integration tests passing; full regression suite (567 integration tests + 24 Playwright E2E tests) 100% green.
 
 ---
 

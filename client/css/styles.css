@@ -90,7 +90,7 @@ html.lang-hi body, html[lang="hi"] body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
   margin-bottom: 10px;
 }
 
@@ -98,7 +98,7 @@ html.lang-hi body, html[lang="hi"] body {
 .brand-container {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   cursor: pointer;
   text-decoration: none;
   user-select: none;
@@ -140,7 +140,8 @@ html.lang-hi body, html[lang="hi"] body {
 
 /* Unified Search Capsule (Airbnb / Zillow HUD) */
 .search-command-bar {
-  flex: 1;
+  flex: 1 1 360px;
+  min-width: 260px;
   max-width: 580px;
   display: flex;
   align-items: center;
@@ -240,8 +241,14 @@ html.lang-hi body, html[lang="hi"] body {
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-shrink: 0;
+}
+
+.header-actions .theme-toggle-btn,
+.header-actions .viewport-btn {
+  padding: 6px 10px;
+  font-size: 11px;
 }
 
 .header-icon-btn,

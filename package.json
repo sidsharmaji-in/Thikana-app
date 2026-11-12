@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server/src/index.js",
     "dev": "node server/src/index.js",
-    "test": "node server/test/slice1-owner.test.js && node server/test/slice2-search-map.test.js && node server/test/slice3-detail.test.js && node server/test/slice4-slots.test.js && node server/test/slice5-chat.test.js && node server/test/slice6-reviews.test.js && node server/test/slice7-notifications.test.js && node server/test/slice8-hardening.test.js && node server/test/sliceP1-modular-db.test.js && node server/test/sliceP2-auth.test.js && node server/test/sliceP3-realtime-locks.test.js && node server/test/sliceP4-media-upload.test.js && node server/test/sliceP6-observability-docker.test.js && node server/test/sliceP7-roommate-vibe.test.js && node server/test/sliceP8-token-payment.test.js && node server/test/sliceP9-localization.test.js",
+    "test": "node server/test/slice1-owner.test.js && node server/test/slice2-search-map.test.js && node server/test/slice3-detail.test.js && node server/test/slice4-slots.test.js && node server/test/slice5-chat.test.js && node server/test/slice6-reviews.test.js && node server/test/slice7-notifications.test.js && node server/test/slice8-hardening.test.js && node server/test/sliceP1-modular-db.test.js && node server/test/sliceP2-auth.test.js && node server/test/sliceP3-realtime-locks.test.js && node server/test/sliceP4-media-upload.test.js && node server/test/sliceP6-observability-docker.test.js && node server/test/sliceP7-roommate-vibe.test.js && node server/test/sliceP8-token-payment.test.js && node server/test/sliceP9-localization.test.js && node server/test/sliceP10-mess-services.test.js",
     "test:slice1": "node server/test/slice1-owner.test.js",
     "test:slice2": "node server/test/slice2-search-map.test.js",
     "test:slice3": "node server/test/slice3-detail.test.js",
@@ -23,6 +23,7 @@
     "test:sliceP7": "node server/test/sliceP7-roommate-vibe.test.js",
     "test:sliceP8": "node server/test/sliceP8-token-payment.test.js",
     "test:sliceP9": "node server/test/sliceP9-localization.test.js",
+    "test:sliceP10": "node server/test/sliceP10-mess-services.test.js",
     "test:e2e": "npx playwright test",
     "test:all": "npm test && npm run test:e2e"
   },

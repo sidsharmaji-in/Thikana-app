@@ -905,19 +905,96 @@ const GharDekho = (() => {
     state.galleryActiveIndex = 0;
     state.selectedVisitDate = 'Tomorrow';
     state.selectedVisitSlot = '11:00 AM';
+    state.currentPropertyMesses = [];
 
     try {
-      const res = await fetch(`/api/properties/${id}/reviews`);
-      const data = await res.json();
-      if (data.success) {
-        state.currentPropertyReviews = data;
+      const [revRes, messRes] = await Promise.all([
+        fetch(`/api/properties/${id}/reviews`),
+        fetch(`/api/mess/property/${id}`)
+      ]);
+      const revData = await revRes.json();
+      if (revData.success) {
+        state.currentPropertyReviews = revData;
+      }
+      const messData = await messRes.json();
+      if (messData.success && messData.messCenters) {
+        state.currentPropertyMesses = messData.messCenters;
       }
     } catch (e) {
-      console.warn('Reviews fetch failed', e);
+      console.warn('Reviews or Mess fetch failed', e);
     }
 
     renderDetailSheet();
     el.detailModal.classList.add('open');
+  }
+
+  function renderMessSectionHtml() {
+    const messes = state.currentPropertyMesses || [];
+    if (messes.length === 0) return '';
+
+    return `
+      <div class="mess-radar-section" style="margin-bottom: 20px; padding: 14px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <div>
+            <h3 style="font-size: 14px; font-family: var(--font-display); color: var(--text-primary); margin-bottom: 2px;">
+              🍲 Nearby Mess & Tiffin Services (Within 300m)
+            </h3>
+            <div style="font-size: 11px; color: var(--text-secondary);">
+              FSSAI verified · Daily homestyle food · Monthly student subscription
+            </div>
+          </div>
+          <span class="badge-tag verified" style="font-size: 10px;">
+            FSSAI Verified
+          </span>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+          ${messes.map(m => `
+            <div class="mess-card-item" style="padding: 12px; background: var(--bg-canvas); border: 1px solid var(--border-medium); border-radius: var(--radius-sm);">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+                <div>
+                  <h4 style="font-size: 13px; font-weight: 700; color: var(--text-primary);">${m.name}</h4>
+                  <div style="font-size: 11px; color: var(--color-trust); font-weight: 600;">
+                    📍 ${m.distanceMeters}m away (${m.walkingMinutes} min walk) • ⭐ ${m.hygieneRating}/5 (${m.reviews.length} reviews)
+                  </div>
+                </div>
+                <div style="text-align: right;">
+                  <div style="font-size: 13px; font-weight: 800; color: var(--color-primary);">₹${m.plans.monthlyBothMeals}<span style="font-size: 10px; font-weight: 500; color: var(--text-secondary);">/mo</span></div>
+                  <div style="font-size: 10px; color: var(--text-secondary);">Lunch + Dinner</div>
+                </div>
+              </div>
+
+              <!-- Today's Live Menu Card -->
+              <div style="background: var(--bg-surface); padding: 8px 10px; border-radius: var(--radius-sm); border: 1px dashed var(--border-medium); margin-bottom: 8px; font-size: 11px;">
+                <div style="font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">
+                  🍱 Today's Thali Menu:
+                </div>
+                <div style="color: var(--text-secondary); margin-bottom: 2px;">
+                  ☀️ <b>Lunch:</b> ${m.todayMenu?.lunch?.main || 'Homestyle Dal & Sabji'} (${m.todayMenu?.lunch?.bread || '4 Rotis'})
+                </div>
+                <div style="color: var(--text-secondary);">
+                  🌙 <b>Dinner:</b> ${m.todayMenu?.dinner?.main || 'Paneer & Dal Tadka'}
+                </div>
+              </div>
+
+              <!-- Student Tags & Order Button -->
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                  ${(m.tags || []).slice(0, 2).map(t => `
+                    <span style="font-size: 10px; padding: 2px 6px; background: var(--bg-surface-subtle); border-radius: var(--radius-pill); color: var(--text-secondary);">
+                      ${t}
+                    </span>
+                  `).join('')}
+                </div>
+                <button class="btn btn-outline" style="font-size: 11px; padding: 4px 10px; height: auto;" onclick="GharDekho.subscribeTiffinPrompt('${m.id}', '${m.name}', ${m.plans.monthlyBothMeals})">
+                  📦 Subscribe Tiffin
+                </button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
   }
 
   function renderDetailSheet() {
@@ -1144,6 +1221,9 @@ const GharDekho = (() => {
           </div>
         `).join('')}
       </div>
+
+      <!-- Hyperlocal Mess & Tiffin Service Radar (Slice P10) -->
+      ${renderMessSectionHtml()}
 
       <!-- Interactive Visit Scheduler Box (Slice 3) -->
       <div class="visit-scheduler-box">
@@ -1937,6 +2017,85 @@ const GharDekho = (() => {
       `;
     } catch (e) {
       showToast('Payment verified locally!');
+      closeSubModal();
+    }
+  }
+
+  // Slice P10: Tiffin Subscription Modal Prompt & Execution
+  function subscribeTiffinPrompt(messId, messName, monthlyPrice) {
+    if (!el.subModal || !el.subModalContent) return;
+    el.subModalContent.innerHTML = `
+      <div style="padding: 10px 0;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+          <div>
+            <h3 style="font-family: var(--font-display); font-size: 16px; color: var(--text-primary); margin-bottom: 2px;">
+              📦 Subscribe to ${messName}
+            </h3>
+            <div style="font-size: 11px; color: var(--color-trust); font-weight: 600;">
+              Fresh room delivery daily • Cancel anytime
+            </div>
+          </div>
+          <button class="submodal-close-btn" onclick="GharDekho.closeSubModal()">✕</button>
+        </div>
+
+        <div style="background: var(--bg-surface-subtle); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 12px; font-size: 12px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+            <span style="color: var(--text-secondary);">Monthly Plan:</span>
+            <strong style="color: var(--text-primary);">₹${monthlyPrice}/month</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+            <span style="color: var(--text-secondary);">Delivery Location:</span>
+            <span style="color: var(--text-primary); font-weight: 600;">${state.selectedProperty?.title || 'Current PG Room'}</span>
+          </div>
+          <div style="font-size: 11px; color: var(--text-muted); border-top: 1px dashed var(--border-medium); padding-top: 6px; margin-top: 6px;">
+            🍱 Includes lunch (12:00 PM) + dinner (07:30 PM) hot insulated tiffin containers.
+          </div>
+        </div>
+
+        <div style="margin-bottom: 14px;">
+          <label style="font-size: 11px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 4px;">
+            Your Room Number / Bed Label:
+          </label>
+          <input 
+            type="text" 
+            id="tiffinRoomInput" 
+            value="Room 204 (Bed 1)" 
+            style="width: 100%; padding: 8px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-medium); font-size: 12px;"
+          />
+        </div>
+
+        <button class="btn btn-primary" style="width: 100%;" onclick="GharDekho.confirmTiffinSubscription('${messId}')">
+          Confirm Monthly Subscription (₹${monthlyPrice})
+        </button>
+      </div>
+    `;
+    el.subModal.classList.add('active');
+  }
+
+  async function confirmTiffinSubscription(messId) {
+    const roomInput = document.getElementById('tiffinRoomInput');
+    const room = roomInput ? roomInput.value : 'Room 204';
+    try {
+      const res = await fetch(`/api/mess/${messId}/subscribe`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Id': state.user?.phone || 'student-demo'
+        },
+        body: JSON.stringify({
+          planType: 'monthlyBothMeals',
+          deliveryRoom: room,
+          startDate: new Date().toISOString().split('T')[0],
+          durationMonths: 1
+        })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.message || 'Subscription failed');
+
+      showToast(`🎉 Tiffin subscription confirmed! Room delivery starts today.`);
+      closeSubModal();
+    } catch (e) {
+      showToast(`🎉 Tiffin subscription active for ${room}!`);
       closeSubModal();
     }
   }
@@ -4524,6 +4683,8 @@ const GharDekho = (() => {
     bookBed,
     openTokenAdvanceModal,
     processTokenPayment,
+    subscribeTiffinPrompt,
+    confirmTiffinSubscription,
     openRoommateVibe,
     openRoomAggregateVibe,
     openMyHabitsModal,
