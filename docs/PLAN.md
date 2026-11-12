@@ -1037,7 +1037,14 @@ While Slices 0 through 8 successfully proved all business logic, UI layouts, and
   - Daily tiffin menu tracking (lunch and dinner dish breakdowns), monthly meal subscriptions (₹2,500–₹3,800/mo), FSSAI hygiene ratings, and student reviews.
   - Interactive mess radar & room delivery subscription cards in the property details sheet.
   - 15 automated integration tests in `server/test/sliceP10-mess-services.test.js`.
-  - **Platform Verification:** 567 integration tests + 24 Playwright E2E tests = **591 total automated tests passing, 100% green**.
+
+#### Slice P11: Bilingual Hindi / Hinglish Voice Search & Intent Engine ✅ (Completed)
+- **Deliverables:**
+  - Spoken Hindi, English, and Hinglish intent parsing engine (`client/js/voiceSearch.js`).
+  - Automated extraction of coaching landmarks (Allen, Resonance, FIITJEE), localities (Talwandi, Kunhari), budgets (numeric and *हजार* multiplier), room sharing types, gender preferences, and hyperlocal amenities.
+  - Interactive microphone button in central search bar with Web Speech API integration, visual listening pulse, and graceful desktop prompt fallback.
+  - 14 automated integration tests in `server/test/sliceP11-voice-search.test.js`.
+  - **Platform Verification:** 581 integration tests + 24 Playwright E2E tests = **605 total automated tests passing, 100% green**.
 
 ---
 

@@ -56,6 +56,10 @@
               aria-label="Search rental properties by coaching, metro, or locality" 
               autocomplete="off"
             />
+            <!-- Voice Search Button (Slice P11) -->
+            <button class="voice-search-btn" id="voiceSearchBtn" onclick="GharDekho.toggleVoiceSearch()" title="Search by Voice (Hindi / Hinglish)" aria-label="Search by Voice">
+              🎙️
+            </button>
           </div>
 
           <!-- Filter Sheet Button -->
@@ -199,6 +203,7 @@
   <div class="toast-msg" id="toastMsg" role="alert" aria-live="assertive"></div>
 
   <script src="js/i18n.js"></script>
+  <script src="js/voiceSearch.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

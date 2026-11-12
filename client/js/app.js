@@ -214,6 +214,7 @@ const GharDekho = (() => {
   async function init() {
     initTheme();
     initLanguage();
+    initVoiceSearch();
     registerServiceWorker();
     setupNetworkListeners();
     setupEventListeners();
@@ -4592,6 +4593,102 @@ const GharDekho = (() => {
     if (btn) btn.textContent = isWide ? '📱 Mobile Frame' : '💻 Wide Dashboard';
   }
 
+  // --- SLICE P11: BILINGUAL VOICE SEARCH & HINGLISH PARSER ---
+  let voiceController = null;
+
+  function initVoiceSearch() {
+    if (window.GharVoiceSearch && window.GharVoiceSearch.VoiceSearchController) {
+      voiceController = new window.GharVoiceSearch.VoiceSearchController({
+        lang: (window.GharI18n && window.GharI18n.getLanguage() === 'hi') ? 'hi-IN' : 'en-IN',
+        onStateChange: ({ isListening }) => {
+          const btn = document.getElementById('voiceSearchBtn');
+          if (btn) {
+            if (isListening) btn.classList.add('listening');
+            else btn.classList.remove('listening');
+          }
+        },
+        onResult: ({ transcript, parsed }) => {
+          applyVoiceSearchQuery(transcript, parsed);
+        },
+        onError: (err) => {
+          console.warn('Voice recognition error:', err);
+          showToast('Voice search unavailable or microphone permission denied');
+        }
+      });
+    }
+  }
+
+  function toggleVoiceSearch() {
+    if (!voiceController || !voiceController.isSupported) {
+      // Simulate mock prompt for desktop browser or environments without microphone access
+      simulateVoiceSearchPrompt();
+      return;
+    }
+
+    if (voiceController.isListening) {
+      voiceController.stopListening();
+    } else {
+      const activeLang = (window.GharI18n && window.GharI18n.getLanguage() === 'hi') ? 'hi-IN' : 'en-IN';
+      const started = voiceController.startListening(activeLang);
+      if (started) {
+        showToast('🎙️ Listening... Speak your room preference in Hindi or English');
+      } else {
+        simulateVoiceSearchPrompt();
+      }
+    }
+  }
+
+  function simulateVoiceSearchPrompt() {
+    const demoPhrases = [
+      'Allen ke paas single room 5000 ke andar with wifi',
+      'Talwandi double sharing boys room',
+      'Resonance coaching girls hostel with power backup',
+      '4 हजार के अंदर कमरा'
+    ];
+    const picked = demoPhrases[Math.floor(Math.random() * demoPhrases.length)];
+    const input = prompt('🎙️ Voice Search (Hindi / English / Hinglish):\nSay or type your room requirements:', picked);
+    if (input && input.trim()) {
+      if (window.GharVoiceSearch) {
+        const parsed = window.GharVoiceSearch.parseVoiceTranscript(input);
+        applyVoiceSearchQuery(input, parsed);
+      } else {
+        if (el.searchInput) {
+          el.searchInput.value = input;
+          state.searchQuery = input;
+          renderFeed();
+        }
+      }
+    }
+  }
+
+  function applyVoiceSearchQuery(transcript, parsed) {
+    if (el.searchInput) el.searchInput.value = transcript;
+    state.searchQuery = parsed.query || transcript;
+
+    if (parsed.filters.maxBudget) {
+      state.filters.maxBudget = parsed.filters.maxBudget;
+    }
+    if (parsed.filters.sharingType) {
+      state.filters.sharingType = parsed.filters.sharingType;
+    }
+    if (parsed.filters.gender) {
+      state.filters.gender = parsed.filters.gender;
+    }
+    if (parsed.filters.amenities && parsed.filters.amenities.length > 0) {
+      parsed.filters.amenities.forEach(a => {
+        if (!state.filters.amenities.includes(a)) {
+          state.filters.amenities.push(a);
+        }
+      });
+    }
+    if (parsed.filters.locality) {
+      state.selectedCity = parsed.filters.locality;
+    }
+
+    showToast(`🎙️ Voice search applied: "${transcript}"`);
+    renderFeed();
+  }
+
   // --- NATURAL PROFESSIONAL THEME (CLEAN AIRBNB/STANZA LIVING LIGHT + ARCHITECTURAL DARK) ---
   function toggleDarkMode() {
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
@@ -4741,6 +4838,8 @@ const GharDekho = (() => {
     toggleViewport,
     toggleDarkMode,
     toggleLanguage,
+    toggleVoiceSearch,
+    applyVoiceSearchQuery,
     cycleTheme,
     applyTheme
   };

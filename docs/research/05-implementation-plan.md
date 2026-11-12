@@ -199,6 +199,20 @@ Evidence Confidence Labels: `[Observed]` (verified in codebase/benchmarks), `[Do
 
 ---
 
+### Step 5.13: Bilingual Voice Search & Hinglish Intent Parser (Slice P11 - Completed)
+- **Goal:** Students and parents can speak naturally in Hindi, English, or mixed Hinglish to search rooms (e.g., *"Allen ke paas single room 4000 ke andar with wifi"*).
+- **Covers:** FR-02, FR-10, NFR-04
+- **Tasks:**
+  - [x] Create Hinglish natural language voice parsing engine (`client/js/voiceSearch.js`) mapping coaching landmarks (Allen, Resonance, FIITJEE), localities, budgets in rupees and hazaar, sharing occupancy, gender preferences, and amenities.
+  - [x] Implement Web Speech API VoiceSearchController with graceful fallback prompt for desktop and unsupported environments.
+  - [x] Integrate microphone action button (`🎙️`) into central search capsule with pulsing audio state animation.
+  - [x] Implement automated test suite (`server/test/sliceP11-voice-search.test.js` - 14 tests).
+- **Tests to write first/with it:** `test/sliceP11-voice-search.test.js` (14 automated tests).
+- **Acceptance Criteria:** Spoken Hindi/English phrases automatically populate search query, budget ceiling, sharing type, gender, and amenities filters.
+- **Definition of Done:** 14 unit tests passing; all 581 backend integration tests passing; 24 Playwright E2E tests green.
+
+---
+
 ## 3. Demo-to-Real-User Checkpoints
 
 - **Checkpoint 1 (After Step 5.3):**
