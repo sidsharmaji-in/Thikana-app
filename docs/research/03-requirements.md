@@ -65,9 +65,28 @@
 
 ### FR-07: Masked Aadhaar KYC Identity Verification
 - **User Story:** As a user, I want landlords to be identity-verified, so that I know the property is legitimate and safe.
-- **Priority:** **Should**
+- **Priority:** **Should** (Completed - Slice P2)
 - **Acceptance Criteria:**
   - *Given* an owner submits Aadhaar verification details, *When* confirmed, *Then* user profile is marked `isKycVerified: true` with masked Aadhaar (`XXXXXXXX1234`) and property carries the Shield Verified badge.
+
+### FR-08: Roommate Vibe & Study Compatibility Radar
+- **User Story:** As a student, I want to evaluate roommate compatibility based on sleep hours, study noise, exam focus (NEET/JEE), and dietary ethics before booking a shared room, so that I don't suffer habit clashes after move-in.
+- **Priority:** **Should** (Completed - Slice P7)
+- **Acceptance Criteria:**
+  - *Given* a student views a shared room, *When* they click "Room Vibe Check" or "Roommate Vibe", *Then* the server evaluates candidate habits against room occupants across 5 weighted dimensions (Sleep 25%, Noise 25%, Exam 20%, Diet 15%, Cleanliness 15%) and returns a deterministic percentage match, dimension breakdown, positive synergies, and friction alerts.
+  - *Given* an empty room with no occupants, *When* vibe check is requested, *Then* the server returns 100% "Fresh Clean Slate ✨".
+
+### FR-09: Refundable Advance Token Deposit (Razorpay)
+- **User Story:** As a student/parent, I want to pay a small ₹500 refundable token advance via UPI to hold a bed slot for 24 hours while traveling to Kota, so that my reservation is legally protected.
+- **Priority:** **Could** (Roadmap - Slice P8)
+- **Acceptance Criteria:**
+  - *Given* an active 10-minute bed lock, *When* the student selects "Hold with ₹500 Token", *Then* an escrow order is created and verified via HMAC-SHA256 signature, converting the 10-minute lease into a 24-hour physical visit lock.
+
+### FR-10: Bilingual Hindi / English UI Localization
+- **User Story:** As a non-English speaking parent or student from rural Rajasthan/Bihar/UP, I want to view all property descriptions, Jal timings, and curfew rules in Hindi (Devanagari), so that I understand all conditions clearly.
+- **Priority:** **Should** (Roadmap - Slice P9)
+- **Acceptance Criteria:**
+  - *Given* a user clicks the "English / हिंदी" language toggle, *When* switched, *Then* all navigation chips, amenity labels, Jal timing alerts, and buttons render in grammatically natural Hindi.
 
 ---
 
@@ -86,20 +105,21 @@
 
 ## 5. Scope Breakdown (MoSCoW)
 
-- **Must Have (MVP Core):**
+- **Must Have (MVP Core - Shipped):**
   - Phone SMS OTP auth & RFC 7519 JWT session rotation (`FR-01`).
   - Hyperlocal coaching proximity search & 5km radius filter (`FR-02`).
   - Bed slot sharing allocation & 10-minute concurrency lock engine (`FR-03`).
   - 5-step property listing wizard for Makan Maalik (`FR-04`).
   - Real-time in-app chat & room visit scheduling (`FR-05`).
   - Direct presigned cloud media upload pipeline (`FR-06`).
-- **Should Have (Next Wave):**
-  - Aadhaar DigiLocker KYC verification modal and masked storage (`FR-07`).
-  - Roommate compatibility habit tags & vibe score matching.
-  - Bilingual Hindi / English UI toggle.
+- **Should Have (Next Wave - In Progress / Completed):**
+  - Aadhaar DigiLocker KYC verification modal and masked storage (`FR-07`) ✅.
+  - Roommate compatibility habit tags & vibe score matching (`FR-08`) ✅.
+  - Bilingual Hindi / English UI toggle (`FR-10`) ⏳.
 - **Could Have (Future Enhancements):**
+  - Razorpay ₹500 refundable token advance payment hold (`FR-09`) ⏳.
   - Video virtual room walkthrough player.
-  - Razorpay ₹500 refundable token advance payment hold.
+  - Hyperlocal mess & tiffin meal rating engine.
 - **Won't Have This Time (Out of Scope):**
   - Long-term building master leases or physical food catering operations (Stanza Living model).
   - Telemarketing call centers or paywalled phone contacts (NoBroker model).

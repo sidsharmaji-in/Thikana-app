@@ -992,6 +992,47 @@ While Slices 0 through 8 successfully proved all business logic, UI layouts, and
   - Production `docker-compose.yml` orchestrating the full stack (`ghardekho-app`, `ghardekho-db` with PostGIS 16 Alpine, and `ghardekho-redis` with persistent AOF storage and healthchecks).
 - **Verification:** 63 automated integration tests in `server/test/sliceP6-observability-docker.test.js` (449 backend integration tests + 18 Playwright E2E tests = 467 total platform tests passing, 0 failures).
 
+#### Slice P7: Roommate Vibe & Compatibility Matching Engine ✅ (Completed - 53 Tests)
+- **Deliverables:**
+  - 5-Dimension Algorithmic Compatibility Engine (`vibeMatcher.js`):
+    - Sleep Schedule alignment (25 pts - Early Bird 🌅 vs Night Owl 🦉)
+    - Study Noise & Focus routine (25 pts - Silent Study 📚 vs Soft Music 🎧 vs Discussion 🗣️)
+    - Target Exam & Peer Synergy (20 pts - NEET 🩺 vs JEE 💻 peer study boost)
+    - Dietary Ethics & Kitchen Rules (15 pts - Pure Veg 🥗 vs Eggetarian 🥚 vs Non-Veg 🍗)
+    - Cleanliness & AC preferences (15 pts - 1-5 scale)
+    - Automatic detection of positive synergies and actionable friction alerts
+  - Roommate Service & Profile Store (`roommateService.js`):
+    - Profile upsert with automatic habit tag generation
+    - Room collective vibe calculation across all active room occupants
+    - Roommate exploration endpoint filtering by city (`Kota`), exam, sleep schedule, and diet
+  - REST API surface mounted under `/api/roommates`:
+    - `GET /api/roommates/profile/me`, `PUT /api/roommates/profile/me`
+    - `POST /api/roommates/compatibility/compare`
+    - `GET /api/roommates/rooms/:propertyId/:roomId/vibe-check`
+    - `GET /api/roommates/explore`
+  - Client UI & PWA Integration (`app.js`, `styles.css`):
+    - `⚡ Room Vibe Check` pill button on shared room cards
+    - Roommate compatibility sheet with visual score meter, breakdown bars, synergies, and friction points
+    - Student habits profile customization drawer (`openMyHabitsModal`)
+- **Verification:** 53 automated tests in `server/test/sliceP7-roommate-vibe.test.js` (502 backend integration tests + 18 Playwright E2E tests = **520 total platform tests passing, 100% green**).
+
+#### Slice P8: Refundable ₹500 Token Advance Payment Integration ⏳ (Ready for Build)
+- **Deliverables:**
+  - Razorpay Orders API integration with secure HMAC-SHA256 webhook signature validation.
+  - Upgrade active 10-minute bed slot lock to a 24-hour confirmed physical visit hold upon ₹500 advance payment.
+  - Automated UPI refund processing if tenant cancels visit at least 6 hours in advance.
+
+#### Slice P9: Bilingual Hindi / Hinglish UI Localization & Fonts ⏳ (Planned)
+- **Deliverables:**
+  - `i18n.js` client translation dictionary covering 100% of labels, amenity tags, Jal water timings, and curfew rules.
+  - Language toggle pill (`English / हिंदी`) in header with `localStorage` persistence.
+  - Google Noto Sans Devanagari typography rendering crisply on budget Android devices.
+
+#### Slice P10: Hyperlocal Mess & Daily Tiffin Service Integration ⏳ (Planned)
+- **Deliverables:**
+  - Near-hostel mess discovery within 300m walking radius.
+  - Daily tiffin menu updates, monthly meal subscriptions (₹2,500–₹3,800), and student hygiene ratings.
+
 ---
 
 *This plan follows the pro-dev-studio methodology.*

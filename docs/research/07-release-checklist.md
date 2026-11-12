@@ -8,9 +8,10 @@ Evidence Confidence Labels: `[Observed]` (verified in build/pipeline), `[Documen
 
 Before initiating any release to staging or production, all gates must be formally checked.
 
-- [x] **Must-Have Functional Verification:** All requirements `FR-01` through `FR-06` fully implemented and verified via automated test suites `[Observed]`.
-- [x] **Automated Regression Suite:** 449 unit and integration tests across 13 test suites passing with 100% success rate (`npm test`) `[Observed]`.
+- [x] **Must-Have Functional Verification:** All requirements `FR-01` through `FR-08` fully implemented and verified via automated test suites `[Observed]`.
+- [x] **Automated Regression Suite:** 502 unit and integration tests across 14 test suites passing with 100% success rate (`npm test`) `[Observed]`.
 - [x] **Headless Multi-Device E2E Suite:** 18 Playwright end-to-end tests green on Desktop Chrome (1280x720) and Mobile Pixel 7 (412x915) (`npm run test:e2e`) `[Observed]`.
+- [x] **Total Test Baseline:** 520 automated tests passing with zero regressions `[Observed]`.
 - [x] **Zero Open P0/P1 Defects:** No known race conditions, memory leaks, or unhandled exceptions in critical user flows `[Observed]`.
 - [x] **Performance Benchmarks:** API p95 response time verified at < 150ms (measured at ~42ms) under load `[Observed]`.
 - [x] **Static Security & Secret Audit:** Zero exposed API keys, private keys, or passwords committed to git repositories `[Observed]`.

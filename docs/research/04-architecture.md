@@ -28,6 +28,7 @@ flowchart TD
             AuthSvc["Auth Service (SMS OTP, JWT, DigiLocker KYC)"]
             PropSvc["Property & Spatial Radar Service (PostGIS / Haversine)"]
             LockSvc["Bed-Slot Concurrency Engine (10-min Leases, HTTP 409)"]
+            RoommateSvc["Roommate Vibe Compatibility Engine (vibeMatcher / roommateService)"]
             MediaSvc["Cloud Media Pipeline (Presigned S3/Cloudinary/Local)"]
             WSHub["WebSocket Pub/Sub Hub (Inquiries, Visits, Typing)"]
         end
@@ -210,6 +211,11 @@ All endpoints return JSON wrapped with standard envelope and `X-Request-ID` trac
 | `POST` | `/api/media/confirm` | Owner / Tenant | Confirms upload & watermark | `{ key, propertyId }` | `{ responsiveUrls, watermarked: true }` |
 | `GET` | `/api/inquiries` | Authenticated | Lists user's active inquiries & visits | None | `{ inquiries: [...] }` |
 | `POST` | `/api/inquiries` | Tenant | Starts new inquiry or visit request | `{ propertyId, visitDate, visitTime }` | `{ inquiryId, status: "visit_requested" }` |
+| `GET` | `/api/roommates/profile/me` | Authenticated | Gets user's roommate compatibility profile | None | `{ success: true, data: profile }` |
+| `PUT` | `/api/roommates/profile/me` | Authenticated | Upserts study habits, sleep, exam, diet | `{ targetExam, sleepSchedule, diet, ... }` | `{ success: true, data: updated }` |
+| `POST` | `/api/roommates/compatibility/compare` | Public | Pairwise compatibility breakdown | `{ profileA, profileB }` | `{ overallScore, matchLevel, dimensions, synergies, frictions }` |
+| `GET` | `/api/roommates/rooms/:propertyId/:roomId/vibe-check` | Public | Aggregate room vibe check against occupants | Path: `:propertyId`, `:roomId` | `{ overallRoomVibe, matchLevel, occupantBreakdowns: [...] }` |
+| `GET` | `/api/roommates/explore` | Public | Discovers compatible flatmates in city | `?city=Kota&targetExam=NEET` | `{ roommates: [...] }` |
 | `GET` | `/health` | Public | Kubernetes liveness probe | None | `{ status: "ok", timestamp }` |
 | `GET` | `/health/ready` | Public | Deep readiness probe (DB, Memory) | None | `{ status: "ready", database: "healthy" }` |
 

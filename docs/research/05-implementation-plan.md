@@ -142,6 +142,60 @@ Evidence Confidence Labels: `[Observed]` (verified in codebase/benchmarks), `[Do
 
 ---
 
+### Step 5.9: Roommate Vibe & Compatibility Matching Engine (Slice P7 - Shipped)
+- **Goal:** Students can calculate deterministic compatibility scores against occupants of shared hostel rooms based on sleep schedule, study noise, exam focus (NEET/JEE), and dietary ethics before booking a bed.
+- **Covers:** FR-08, NFR-01
+- **Tasks:**
+  - [x] Implement `vibeMatcher.js` computing 5-dimension compatibility scores (Sleep 25%, Noise 25%, Exam 20%, Diet 15%, Cleanliness 15%).
+  - [x] Implement `roommateService.js` managing student habit profiles and aggregate room vibe scores.
+  - [x] Expose `/api/roommates` routes (`GET /profile/me`, `PUT /profile/me`, `POST /compatibility/compare`, `GET /rooms/:propertyId/:roomId/vibe-check`, `GET /explore`).
+  - [x] Integrate `⚡ Room Vibe Check` pill, visual dimension breakdown bars, positive synergies, and friction alerts into PWA modal.
+  - [x] Add student study habits customization modal (`openMyHabitsModal`).
+- **Tests to write first/with it:** `test/sliceP7-roommate-vibe.test.js` (53 tests verifying heuristic normalization, pairwise matches, room-level aggregation, and HTTP endpoints).
+- **Acceptance Criteria:** Exact matches score 100% (Super Vibe 🔥); clashes yield score < 50% (Mismatched ⚠️) with friction warnings; empty rooms report 100% Fresh Clean Slate.
+- **Definition of Done:** 53 tests passing, zero regression on existing 449 backend tests and 18 Playwright E2E tests (520 total platform tests).
+
+---
+
+### Step 5.10: Refundable ₹500 Token Advance Payment Integration (Slice P8 - Ready)
+- **Goal:** Students and parents can pay a small ₹500 refundable token advance via UPI to convert a 10-minute temporary bed lock into a 24-hour confirmed physical visit reservation.
+- **Covers:** FR-09, NFR-03
+- **Tasks:**
+  - [ ] Implement `paymentService.js` supporting Razorpay Orders API and webhook signature verification (`razorpay_signature`).
+  - [ ] Expose `POST /api/payments/token-advance/order` and `POST /api/payments/token-advance/verify`.
+  - [ ] Extend bed lock service to upgrade lock status from `active` (10m) to `token_confirmed` (24h) upon verified payment.
+  - [ ] Provide automated UPI refund webhook if tenant cancels visit at least 6 hours in advance.
+- **Tests to write first/with it:** `test/sliceP8-token-payment.test.js` (Simulating order creation, HMAC-SHA256 signature verification, tamper rejection, and 24-hour lock transition).
+- **Acceptance Criteria:** Valid signature verifies payment and locks bed for 24 hours. Tampered signature returns HTTP 400.
+- **Definition of Done:** Integration tests pass, mock Razorpay gateway verified, zero credentials exposed.
+
+---
+
+### Step 5.11: Bilingual Hindi / Hinglish UI Localization & Devanagari Fonts (Slice P9 - Planned)
+- **Goal:** Non-English speaking parents from rural Rajasthan, Bihar, and UP can browse properties, Jal supply alerts, and curfew rules in natural Hindi.
+- **Covers:** FR-10, NFR-04
+- **Tasks:**
+  - [ ] Create i18n dictionary (`client/js/i18n.js`) with English and Hindi (Devanagari) translations for all labels and chips.
+  - [ ] Add language switch toggle (`EN / हिंदी`) in client navigation header.
+  - [ ] Integrate Google Noto Sans Devanagari font rendering cleanly on low-end Android mobile displays.
+- **Tests to write first/with it:** `test/sliceP9-localization.test.js` & Playwright bilingual journey spec.
+- **Acceptance Criteria:** Toggling language updates 100% of visible labels immediately without page reload.
+- **Definition of Done:** Playwright test verifies Hindi toggle on mobile and desktop viewports.
+
+---
+
+### Step 5.12: Hyperlocal Mess & Daily Tiffin Service Integration & Ratings (Slice P10 - Planned)
+- **Goal:** Students can view daily mess menus, hygiene ratings, and student reviews of tiffin centers located within 300 meters of their PG.
+- **Covers:** FR-02, NFR-01
+- **Tasks:**
+  - [ ] Extend Property schema to include `nearbyMessServices` with daily tiffin timings and pricing (₹2,500–₹3,800/mo).
+  - [ ] Add student mess review voting card on the property details sheet.
+- **Tests to write first/with it:** `test/sliceP10-mess-services.test.js`.
+- **Acceptance Criteria:** Mess cards display verified hygiene badges and today's lunch/dinner menu.
+- **Definition of Done:** API and UI tests verify mess data loading.
+
+---
+
 ## 3. Demo-to-Real-User Checkpoints
 
 - **Checkpoint 1 (After Step 5.3):**
@@ -228,5 +282,29 @@ Context: read docs/research/03-requirements.md (NFR-06) and docs/research/04-arc
 Task: Implement Step 5.8: Production Hardening, Observability, Pino Logs & Docker Deployment.
 Constraints: Pino JSON logging; X-Request-ID and X-Response-Time headers; /health/ready deep probe; multi-stage Dockerfile.
 Done when: test/sliceP6-observability-docker.test.js passes 63/63 tests; all 467 project tests green; Docker build succeeds.
+```
+
+### Prompt Starter for Step 5.9
+```text
+Context: read docs/research/03-requirements.md (FR-08) and docs/research/04-architecture.md.
+Task: Implement Step 5.9: Roommate Vibe & Compatibility Matching Engine.
+Constraints: 5-dimension scoring algorithm (Sleep 25%, Noise 25%, Exam 20%, Diet 15%, Cleanliness 15%); room-level aggregate scoring; mobile UI integration.
+Done when: test/sliceP7-roommate-vibe.test.js passes 53/53 tests; total platform test count reaches 520 tests with 100% pass rate.
+```
+
+### Prompt Starter for Step 5.10
+```text
+Context: read docs/research/03-requirements.md (FR-09) and docs/research/04-architecture.md.
+Task: Implement Step 5.10: Refundable ₹500 Token Advance Payment Integration (Razorpay).
+Constraints: Razorpay Orders API, HMAC-SHA256 signature verification; upgrade 10m bed lock to 24-hour visit hold; automated refund webhook.
+Done when: test/sliceP8-token-payment.test.js passes; signature validation prevents tampering; 24h lock verified.
+```
+
+### Prompt Starter for Step 5.11
+```text
+Context: read docs/research/03-requirements.md (FR-10, NFR-04) and docs/research/04-architecture.md.
+Task: Implement Step 5.11: Bilingual Hindi / Hinglish UI Localization.
+Constraints: i18n dictionary for all UI text; language toggle in header; zero layout shift; support Devanagari fonts on mobile.
+Done when: Playwright test asserts Hindi strings on search bar, chips, and modals; toggle persists in localStorage.
 ```
 

@@ -83,6 +83,7 @@ GharDekho is classified as **Moderate-to-High Risk** due to:
 | **FR-05** | WebSocket Chat & Visit Booking | Must | U-CHAT-01..06 | I-CHAT-01..15 | A-INQ-01..08 | E2E-04, E2E-13 | NFR-01 (Broadcast < 50ms) | **Pass** (62 tests) |
 | **FR-06** | Presigned Cloud Media Upload | Must | U-MED-01..10 | I-MED-01..20 | A-MED-01..12 | E2E-06, E2E-15 | NFR-03 (MIME allowlist, HMAC) | **Pass** (64 tests) |
 | **FR-07** | Masked Aadhaar KYC DigiLocker | Should | U-KYC-01..04 | I-KYC-01..06 | A-KYC-01..04 | E2E-07 | NFR-03 (DPDP masking XXXXXXXX1234) | **Pass** (20 tests) |
+| **FR-08** | Roommate Vibe & Compatibility Engine | Should | U-VIBE-01..12 | I-VIBE-01..18 | A-VIBE-01..12 | E2E-03 | NFR-01 (Deterministic scoring) | **Pass** (53 tests) |
 | **NFR-01** | Performance (p95 API < 150ms) | Must | — | I-PERF-01..04 | A-ALL | E2E-ALL | Latency checks via `X-Response-Time` | **Pass** (< 120ms) |
 | **NFR-02** | Concurrency Safety (Zero Double-Booking) | Must | U-LOCK-04 | I-LOCK-08..12 | A-LOCK-05 | — | Concurrency race simulation | **Pass** (100% atomic) |
 | **NFR-03** | Web Application Security & Hardening | Must | U-SEC-01..06 | I-SEC-01..10 | A-SEC-01..08 | E2E-ALL | CSP, XSS sanitization, RBAC 403 | **Pass** (Helm-grade) |
