@@ -19,7 +19,7 @@ Comprehensive product, architecture, testing, and release strategy built with th
 GharDekho MVP provides a fast, zero-brokerage mobile PWA for student coaching accommodation in Kota:
 - **Tenant Experience:** Phone SMS OTP sign-in, walking proximity search radar to coaching hubs (Allen, Resonance), transparent municipal water/power indicators, real-time 10-minute atomic bed slot locking, and direct in-app chat with 1-click WhatsApp fallback.
 - **Landlord Experience:** 5-step property listing wizard with multi-photo presigned direct cloud uploads, DigiLocker masked Aadhaar verification, and instant room visit request confirmations.
-- **Engineering Foundation:** Node.js Express modular monolith, PostGIS spatial calculations, Redis/Memory concurrency lock engine, Pino structured logging, Sentry error telemetry, Roommate Vibe matching engine, and a multi-stage Dockerized deployment verified by **520 automated tests** (502 backend integration + 18 multi-device Playwright E2E).
+- **Engineering Foundation:** Node.js Express modular monolith, PostGIS spatial calculations, Redis/Memory concurrency lock engine, Pino structured logging, Sentry error telemetry, Roommate Vibe matching engine, Razorpay token advance payments, Bilingual Hindi/English i18n, and a multi-stage Dockerized deployment verified by **576 automated tests** (552 backend integration + 24 multi-device Playwright E2E).
 
 ---
 

@@ -30,8 +30,8 @@
         <div class="brand-container" onclick="GharDekho.setTab('khojo')" role="button" tabindex="0" aria-label="GharDekho Home">
           <div class="brand-logo" aria-hidden="true">🏠</div>
           <div class="brand-text">
-            <div class="brand-name">Ghar<span>Dekho</span></div>
-            <div class="brand-tagline">Zero-Brokerage Student Housing</div>
+            <div class="brand-name" data-i18n="brand.name">Ghar<span>Dekho</span></div>
+            <div class="brand-tagline" data-i18n="brand.tagline">Zero-Brokerage Student Housing</div>
           </div>
         </div>
 
@@ -40,7 +40,7 @@
           <!-- City Quick Pill -->
           <button class="location-pill" id="cityPill" onclick="GharDhundo.resetFilters()" title="Change city" aria-label="Selected city: All cities. Click to filter.">
             <span class="pill-icon">📍</span>
-            <span class="pill-text">All Cities</span>
+            <span class="pill-text" data-i18n="nav.all_cities">All Cities</span>
           </button>
           
           <div class="search-divider"></div>
@@ -51,6 +51,7 @@
             <input 
               type="text" 
               id="searchInput" 
+              data-i18n-placeholder="nav.search_placeholder"
               placeholder="Search by coaching (Allen, Resonance), metro, locality..." 
               aria-label="Search rental properties by coaching, metro, or locality" 
               autocomplete="off"
@@ -60,7 +61,7 @@
           <!-- Filter Sheet Button -->
           <button class="filter-btn-trigger" onclick="GharDekho.openFilterSheet()" title="Open Filters" aria-label="Open Filter Options Sheet">
             <span class="filter-icon">⚙️</span>
-            <span class="filter-btn-label">Filters</span>
+            <span class="filter-btn-label" data-i18n="nav.filters">Filters</span>
           </button>
         </div>
 
@@ -86,16 +87,16 @@
           <!-- Role Switcher Segmented Control -->
           <div class="role-toggle-group" role="group" aria-label="User Profile Role">
             <button class="role-btn active" id="roleTenantBtn" aria-pressed="true">
-              <span class="role-emoji">🎓</span> Kirayedaar
+              <span class="role-emoji">🎓</span> <span data-i18n="role.tenant">Kirayedaar</span>
             </button>
             <button class="role-btn" id="roleOwnerBtn" aria-pressed="false">
-              <span class="role-emoji">🔑</span> Owner
+              <span class="role-emoji">🔑</span> <span data-i18n="role.owner">Owner</span>
             </button>
           </div>
 
           <!-- Authentication Profile / Sign In Pill (Slice P2) -->
           <button class="theme-toggle-btn" id="headerAuthBtn" onclick="GharDekho.openAuthModal()" title="Sign In with Mobile OTP" aria-label="Sign In with Mobile OTP">
-            <span id="headerAuthLabel">👤 Sign In</span>
+            <span id="headerAuthLabel" data-i18n="nav.sign_in">👤 Sign In</span>
           </button>
 
           <!-- Viewport Simulator Toggle (Mobile vs Full Screen) -->
@@ -105,7 +106,7 @@
 
           <!-- Clean Dark/Light Mode Toggle -->
           <button class="theme-toggle-btn" id="themeToggleBtn" onclick="GharDekho.toggleDarkMode()" title="Toggle Dark/Light Mode" aria-label="Toggle Dark/Light Theme">
-            🌓 <span class="theme-name-label" id="themeNameLabel">Dark Mode</span>
+            🌓 <span class="theme-name-label" id="themeNameLabel" data-i18n="nav.dark_mode">Dark Mode</span>
           </button>
 
           <!-- Bilingual Hindi / English Toggle (Section 14 Plan) -->
@@ -119,11 +120,11 @@
 
       <!-- Quick Category & City Navigation Bar -->
       <nav class="quick-chips-row" id="quickChips" aria-label="Quick Hub Filters">
-        <button class="chip active" onclick="GharDekho.setCity('All')">All Hubs</button>
-        <button class="chip" onclick="GharDekho.setCity('Kota')">🎯 Kota (NEET/JEE Hub)</button>
-        <button class="chip" onclick="GharDekho.setCity('Pune')">💼 Pune (IT & Colleges)</button>
-        <button class="chip" onclick="GharDekho.setCity('Jaipur')">🎓 Jaipur (MNIT & Uni)</button>
-        <button class="chip" onclick="GharDekho.setCity('Delhi')">🏛️ Delhi (Metro & UPSC)</button>
+        <button class="chip active" onclick="GharDekho.setCity('All')" data-i18n="nav.all_hubs">All Hubs</button>
+        <button class="chip" onclick="GharDekho.setCity('Kota')" data-i18n="nav.kota_hub">🎯 Kota (NEET/JEE Hub)</button>
+        <button class="chip" onclick="GharDekho.setCity('Pune')" data-i18n="nav.pune_hub">💼 Pune (IT & Colleges)</button>
+        <button class="chip" onclick="GharDekho.setCity('Jaipur')" data-i18n="nav.jaipur_hub">🎓 Jaipur (MNIT & Uni)</button>
+        <button class="chip" onclick="GharDekho.setCity('Delhi')" data-i18n="nav.delhi_hub">🏛️ Delhi (Metro & UPSC)</button>
       </nav>
 
     </header>
@@ -137,23 +138,23 @@
     <nav class="bottom-nav" id="bottomNav" aria-label="Bottom Navigation">
       <button class="nav-item active" onclick="GharDekho.setTab('khojo')">
         <span class="nav-icon">🏠</span>
-        <span>Khojo</span>
+        <span data-i18n="nav.khojo">Khojo</span>
       </button>
       <button class="nav-item" onclick="GharDekho.setTab('map')">
         <span class="nav-icon">🗺️</span>
-        <span>Map</span>
+        <span data-i18n="nav.map">Map</span>
       </button>
       <button class="nav-item" onclick="GharDekho.setTab('saved')">
         <span class="nav-icon">❤️</span>
-        <span>Saved</span>
+        <span data-i18n="nav.saved">Saved</span>
       </button>
       <button class="nav-item" onclick="GharDekho.setTab('messages')">
         <span class="nav-icon">💬</span>
-        <span>Chat</span>
+        <span data-i18n="nav.chat">Chat</span>
       </button>
       <button class="nav-item" onclick="GharDekho.setTab('profile')">
         <span class="nav-icon">👤</span>
-        <span>Profile</span>
+        <span data-i18n="nav.profile">Profile</span>
       </button>
     </nav>
 
@@ -197,6 +198,7 @@
   <!-- Floating Toast Message Notification -->
   <div class="toast-msg" id="toastMsg" role="alert" aria-live="assertive"></div>
 
+  <script src="js/i18n.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

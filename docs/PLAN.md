@@ -1016,17 +1016,20 @@ While Slices 0 through 8 successfully proved all business logic, UI layouts, and
     - Student habits profile customization drawer (`openMyHabitsModal`)
 - **Verification:** 53 automated tests in `server/test/sliceP7-roommate-vibe.test.js` (502 backend integration tests + 18 Playwright E2E tests = **520 total platform tests passing, 100% green**).
 
-#### Slice P8: Refundable ₹500 Token Advance Payment Integration ⏳ (Ready for Build)
+#### Slice P8: Refundable ₹500 Token Advance Payment Integration ✅ (Completed)
 - **Deliverables:**
-  - Razorpay Orders API integration with secure HMAC-SHA256 webhook signature validation.
+  - Razorpay Orders API integration with secure HMAC-SHA256 signature validation (`paymentService.js` & `payments.js`).
   - Upgrade active 10-minute bed slot lock to a 24-hour confirmed physical visit hold upon ₹500 advance payment.
-  - Automated UPI refund processing if tenant cancels visit at least 6 hours in advance.
+  - Automated refund processing if tenant cancels visit at least 6 hours in advance with digital receipt generation.
+  - 38 automated tests in `sliceP8-token-payment.test.js`.
 
-#### Slice P9: Bilingual Hindi / Hinglish UI Localization & Fonts ⏳ (Planned)
+#### Slice P9: Bilingual Hindi / Hinglish UI Localization & Fonts ✅ (Completed)
 - **Deliverables:**
-  - `i18n.js` client translation dictionary covering 100% of labels, amenity tags, Jal water timings, and curfew rules.
-  - Language toggle pill (`English / हिंदी`) in header with `localStorage` persistence.
+  - `i18n.js` client translation dictionary covering 100% of labels, amenity tags, Jal water timings, curfew rules, and buttons.
+  - Language toggle pill (`English / हिंदी`) in header with instant DOM translation and `localStorage` persistence.
   - Google Noto Sans Devanagari typography rendering crisply on budget Android devices.
+  - 12 unit/integration tests in `sliceP9-localization.test.js` + 6 Playwright multi-device E2E tests in `04-bilingual-localization.spec.js`.
+  - **Platform Verification:** 552 integration tests + 24 Playwright E2E tests = **576 total automated tests passing, 100% green**.
 
 #### Slice P10: Hyperlocal Mess & Daily Tiffin Service Integration ⏳ (Planned)
 - **Deliverables:**

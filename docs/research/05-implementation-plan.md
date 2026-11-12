@@ -171,16 +171,17 @@ Evidence Confidence Labels: `[Observed]` (verified in codebase/benchmarks), `[Do
 
 ---
 
-### Step 5.11: Bilingual Hindi / Hinglish UI Localization & Devanagari Fonts (Slice P9 - Planned)
+### Step 5.11: Bilingual Hindi / Hinglish UI Localization & Devanagari Fonts (Slice P9 - Completed)
 - **Goal:** Non-English speaking parents from rural Rajasthan, Bihar, and UP can browse properties, Jal supply alerts, and curfew rules in natural Hindi.
 - **Covers:** FR-10, NFR-04
 - **Tasks:**
-  - [ ] Create i18n dictionary (`client/js/i18n.js`) with English and Hindi (Devanagari) translations for all labels and chips.
-  - [ ] Add language switch toggle (`EN / हिंदी`) in client navigation header.
-  - [ ] Integrate Google Noto Sans Devanagari font rendering cleanly on low-end Android mobile displays.
-- **Tests to write first/with it:** `test/sliceP9-localization.test.js` & Playwright bilingual journey spec.
+  - [x] Create i18n dictionary (`client/js/i18n.js`) with English and Hindi (Devanagari) translations for all labels, placeholders, titles, and chips.
+  - [x] Add language switch toggle (`EN / हिंदी`) in client navigation header with DOM translation engine.
+  - [x] Integrate Google Noto Sans Devanagari font rendering cleanly on low-end Android mobile displays.
+  - [x] Implement persistent storage (`localStorage.getItem('ghar_preferred_lang')`) across user sessions.
+- **Tests to write first/with it:** `test/sliceP9-localization.test.js` (12 automated unit/integration tests) & Playwright bilingual journey spec `tests/e2e/04-bilingual-localization.spec.js` (6 multi-device tests).
 - **Acceptance Criteria:** Toggling language updates 100% of visible labels immediately without page reload.
-- **Definition of Done:** Playwright test verifies Hindi toggle on mobile and desktop viewports.
+- **Definition of Done:** 12 unit tests + 6 Playwright tests passing on Desktop Chrome and Mobile Pixel 7. Zero layout shifts.
 
 ---
 

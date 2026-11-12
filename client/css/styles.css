@@ -31,6 +31,13 @@ html, body {
 /* =======================================================
    RESPONSIVE SHELL ARCHITECTURE
    ======================================================= */
+/* Devanagari Hindi Typography Optimization (Slice P9) */
+html.lang-hi, html[lang="hi"] {
+  font-family: var(--font-devanagari);
+}
+html.lang-hi body, html[lang="hi"] body {
+  letter-spacing: 0.01em;
+}
 .device-shell {
   width: 100%;
   min-height: 100vh;

@@ -213,6 +213,7 @@ const GharDekho = (() => {
   // Initialize App
   async function init() {
     initTheme();
+    initLanguage();
     registerServiceWorker();
     setupNetworkListeners();
     setupEventListeners();
@@ -351,6 +352,10 @@ const GharDekho = (() => {
       else if (state.activeTab === 'owner_add') renderOwnerAddWizard();
       else if (state.activeTab === 'owner_inquiries') renderOwnerInquiries();
       else if (state.activeTab === 'owner_profile') renderProfile();
+    }
+
+    if (window.GharI18n && window.GharI18n.translateDom) {
+      window.GharI18n.translateDom();
     }
   }
 
@@ -4442,12 +4447,38 @@ const GharDekho = (() => {
   }
 
   function toggleLanguage() {
-    const currentLang = document.documentElement.getAttribute('lang') || 'en';
+    const i18n = window.GharI18n;
+    const currentLang = (i18n && i18n.getLanguage) ? i18n.getLanguage() : (document.documentElement.getAttribute('lang') || 'en');
     const nextLang = currentLang === 'en' ? 'hi' : 'en';
-    document.documentElement.setAttribute('lang', nextLang);
+
+    if (i18n && i18n.setLanguage) {
+      i18n.setLanguage(nextLang);
+      i18n.translateDom();
+    } else {
+      document.documentElement.setAttribute('lang', nextLang);
+      try {
+        localStorage.setItem('ghar_preferred_lang', nextLang);
+      } catch (e) {}
+    }
+
     const labelEl = document.getElementById('langNameLabel');
     if (labelEl) labelEl.textContent = nextLang === 'hi' ? 'English' : 'हिंदी';
-    showToast(nextLang === 'hi' ? '🌐 भाषा बदली गई: हिंदी (Hinglish Support Active)' : '🌐 Language set to English');
+    
+    // Re-render current view to refresh card and list templates in new language
+    render();
+
+    showToast(nextLang === 'hi' ? '🌐 भाषा बदली गई: हिंदी (देवनागरी सक्रिय)' : '🌐 Language set to English');
+  }
+
+  function initLanguage() {
+    const i18n = window.GharI18n;
+    if (i18n && i18n.init) {
+      const activeLang = i18n.init();
+      i18n.setLanguage(activeLang);
+      i18n.translateDom();
+      const labelEl = document.getElementById('langNameLabel');
+      if (labelEl) labelEl.textContent = activeLang === 'hi' ? 'English' : 'हिंदी';
+    }
   }
 
   function initTheme() {
