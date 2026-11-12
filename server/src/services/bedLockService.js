@@ -188,6 +188,58 @@ class BedLockService {
     };
   }
 
+  // Upgrade temporary 10-minute lock to 24-hour confirmed token advance hold (Slice P8)
+  upgradeToTokenConfirmed(propertyId, roomId, slotId, { paymentId, orderId, lockedBy, tenantName, tenantPhone } = {}) {
+    const key = this._makeKey(propertyId, roomId, slotId);
+    const now = Date.now();
+    const duration24hMs = 24 * 3600 * 1000;
+    const expiresAt = now + duration24hMs;
+
+    const existing = this.locks.get(key) || {
+      key,
+      propertyId,
+      roomId,
+      slotId,
+      lockedAt: new Date(now).toISOString()
+    };
+
+    const updatedLock = {
+      ...existing,
+      lockedBy: lockedBy || existing.lockedBy || `tenant-${now}`,
+      tenantName: tenantName || existing.tenantName || 'Student',
+      tenantPhone: tenantPhone || existing.tenantPhone || '',
+      expiresAt,
+      remainingSeconds: 24 * 3600,
+      status: 'token_confirmed',
+      paymentId,
+      orderId,
+      tokenAmount: 500,
+      currency: 'INR',
+      confirmedAt: new Date(now).toISOString()
+    };
+
+    this.locks.set(key, updatedLock);
+
+    // Broadcast live event to all clients viewing this property
+    realtimeHub.broadcast(`property:${propertyId}`, 'slot:token_confirmed', {
+      propertyId,
+      roomId,
+      slotId,
+      paymentId,
+      expiresAt: new Date(expiresAt).toISOString(),
+      remainingSeconds: 24 * 3600
+    });
+
+    return {
+      success: true,
+      lock: {
+        ...updatedLock,
+        expiresAt: new Date(expiresAt).toISOString()
+      },
+      message: 'Bed reservation upgraded to 24-hour confirmed hold via ₹500 token advance.'
+    };
+  }
+
   // Validate lock when completing final booking
   validateAndConsumeLock(propertyId, roomId, slotId, tenantIdentifier = null) {
     const key = this._makeKey(propertyId, roomId, slotId);
