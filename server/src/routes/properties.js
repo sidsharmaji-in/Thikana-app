@@ -1,7 +1,37 @@
 const express = require('express');
 const router = express.Router();
 const repository = require('../data/repository');
+const visionExtractorService = require('../services/visionExtractorService');
 const { sanitizeInput } = require('../middleware/sanitizer');
+
+// POST /api/properties/ai-extract-photos - AI Vision Detail Extraction (Slice P12)
+router.post('/ai-extract-photos', async (req, res) => {
+  try {
+    const { photos, city, locality, ownerPreviousData } = req.body;
+    if (!photos || !Array.isArray(photos) || photos.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'PHOTOS_REQUIRED',
+        message: 'Please provide at least one photo URL for AI analysis'
+      });
+    }
+
+    const extraction = await visionExtractorService.extractRoomDetailsFromPhotos({
+      photos,
+      city: city || 'Kota',
+      locality: locality || '',
+      ownerPreviousData: ownerPreviousData || {}
+    });
+
+    res.json(extraction);
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: 'AI_EXTRACTION_FAILED',
+      message: err.message
+    });
+  }
+});
 
 // GET /api/properties - Filter & Search (Slice 2 Engine)
 router.get('/', (req, res) => {

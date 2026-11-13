@@ -1044,7 +1044,15 @@ While Slices 0 through 8 successfully proved all business logic, UI layouts, and
   - Automated extraction of coaching landmarks (Allen, Resonance, FIITJEE), localities (Talwandi, Kunhari), budgets (numeric and *हजार* multiplier), room sharing types, gender preferences, and hyperlocal amenities.
   - Interactive microphone button in central search bar with Web Speech API integration, visual listening pulse, and graceful desktop prompt fallback.
   - 14 automated integration tests in `server/test/sliceP11-voice-search.test.js`.
-  - **Platform Verification:** 581 integration tests + 24 Playwright E2E tests = **605 total automated tests passing, 100% green**.
+
+#### Slice P12: AI Vision Photo Onboarding & Admin Console ✅ (Completed)
+- **Deliverables:**
+  - AI Vision extraction pipeline (`visionExtractorService.js` & `POST /api/properties/ai-extract-photos`) analyzing uploaded room/bathroom photos.
+  - Automatic inference of room sharing, bed counts, attached bathrooms, geysers, AC/cooling, and city-calibrated benchmark pricing.
+  - 1-click `✨ AI Smart Auto-Fill from Photos` inside owner listing wizard (`triggerAiVisionScan`).
+  - Super Admin moderation console (`/api/admin/overview`, `/pending-listings`, `/listings/:id/approve`, `/listings/:id/reject`, `/payments/escrow`).
+  - 8 automated integration tests in `server/test/sliceP12-ai-onboarding-admin.test.js`.
+  - **Platform Verification:** 589 integration tests + 24 Playwright E2E tests = **613 total automated tests passing, 100% green**.
 
 ---
 

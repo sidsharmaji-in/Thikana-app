@@ -3278,7 +3278,12 @@ const GharDekho = (() => {
 
         <!-- STEP 1: Basic Information -->
         ${state.ownerStep === 1 ? `
-          <h4 style="margin-bottom: 12px; color: var(--text-primary);">Step 1: Property Identity & Type</h4>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h4 style="margin: 0; color: var(--text-primary);">Step 1: Property Identity & Type</h4>
+            <button class="btn btn-outline" style="font-size: 11px; padding: 4px 10px; border-color: var(--color-primary); color: var(--color-primary);" onclick="GharDekho.triggerAiVisionScan()">
+              ✨ AI Smart Auto-Fill from Photos
+            </button>
+          </div>
           
           <div class="form-group">
             <label class="form-label">Property Title / PG Name *</label>
@@ -3682,6 +3687,55 @@ const GharDekho = (() => {
       if (notEl) d.noticePeriodDays = Number(notEl.value) || 30;
       const areaEl = document.getElementById('ownerArea');
       if (areaEl) d.areaSqft = Number(areaEl.value) || 250;
+    }
+  }
+
+  // AI Vision Smart Auto-Fill (Slice P12)
+  async function triggerAiVisionScan() {
+    showToast('✨ AI Vision: Scanning sample room photos and detecting amenities...');
+    try {
+      const samplePhotos = [
+        'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&room=double-sharing',
+        'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&bath=western'
+      ];
+      const res = await fetch('/api/properties/ai-extract-photos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          photos: samplePhotos,
+          city: state.selectedCity === 'All' ? 'Kota' : state.selectedCity,
+          locality: 'Talwandi, Near Allen',
+          ownerPreviousData: {
+            propertyName: 'Saraswati Residency (AI Verified)',
+            ownerName: state.user?.fullName || 'Ramesh Sharma',
+            ownerPhone: state.user?.phone || '+91 98290 12345'
+          }
+        })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.message || 'AI extraction failed');
+
+      const extracted = data.extractedData;
+      state.ownerDraft.title = extracted.title;
+      state.ownerDraft.locality = extracted.prefillContact.locality;
+      state.ownerDraft.city = extracted.prefillContact.city;
+      state.ownerDraft.pricePerPerson = extracted.suggestedRoom.pricePerPerson;
+      state.ownerDraft.maxOccupancy = extracted.suggestedRoom.maxOccupancy;
+      state.ownerDraft.photos = samplePhotos;
+      if (extracted.detectedAmenities) {
+        state.ownerDraft.amenities = {
+          ...state.ownerDraft.amenities,
+          ...extracted.detectedAmenities
+        };
+      }
+
+      showToast(`🎉 AI detected: ${extracted.suggestedRoom.maxOccupancy}-Bed room, Attached Bath, and suggested ₹${extracted.suggestedRoom.pricePerPerson}/mo!`);
+      renderOwnerAddWizard();
+    } catch (e) {
+      showToast('AI smart fill simulated for sample room photos');
+      state.ownerDraft.title = 'Cozy Student PG (AI Auto-Filled)';
+      state.ownerDraft.locality = 'Talwandi';
+      renderOwnerAddWizard();
     }
   }
 
@@ -4814,6 +4868,7 @@ const GharDekho = (() => {
     markAllNotificationsRead,
     handleNotificationClick,
     updatePreference,
+    triggerAiVisionScan,
     nextOwnerStep,
     prevOwnerStep,
     toggleDraftAmenity,

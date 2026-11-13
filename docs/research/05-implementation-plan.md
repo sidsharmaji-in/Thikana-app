@@ -213,6 +213,21 @@ Evidence Confidence Labels: `[Observed]` (verified in codebase/benchmarks), `[Do
 
 ---
 
+### Step 5.14: AI Vision Onboarding Pipeline & Operations Admin Console (Slice P12 - Completed)
+- **Goal:** Landlords can upload raw room and bathroom photos and have room sharing, bed counts, and amenities auto-extracted in seconds; Platform admins have an operational moderation console for Shield Verification badge approvals and escrow audit.
+- **Covers:** FR-06, FR-07, NFR-03
+- **Tasks:**
+  - [x] Create `visionExtractorService.js` analyzing room photographs to infer bed capacity, attached bathrooms, geysers, AC/cooling, and city-calibrated benchmark pricing.
+  - [x] Implement `POST /api/properties/ai-extract-photos` endpoint pre-populating landlord listing drafts.
+  - [x] Build Super Admin Console routes (`/api/admin/overview`, `/api/admin/pending-listings`, `/api/admin/listings/:id/approve`, `/api/admin/listings/:id/reject`, `/api/admin/payments/escrow`).
+  - [x] Integrate 1-click `✨ AI Smart Auto-Fill from Photos` in owner listing wizard (`triggerAiVisionScan`).
+  - [x] Implement automated integration test suite (`test/sliceP12-ai-onboarding-admin.test.js` - 8 tests).
+- **Tests to write first/with it:** `test/sliceP12-ai-onboarding-admin.test.js` (8 automated tests).
+- **Acceptance Criteria:** Photo uploads automatically populate room occupancy, bed slots, and local amenities; Admin approvals grant Shield Verification badges.
+- **Definition of Done:** 8 integration tests passing; full suite of 589 integration tests and 24 Playwright E2E browser journeys passing (613 total tests, 100% green).
+
+---
+
 ## 3. Demo-to-Real-User Checkpoints
 
 - **Checkpoint 1 (After Step 5.3):**

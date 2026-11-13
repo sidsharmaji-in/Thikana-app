@@ -19,6 +19,7 @@ const mediaRouter = require('./routes/media');
 const roommatesRouter = require('./routes/roommates');
 const paymentsRouter = require('./routes/payments');
 const messRouter = require('./routes/mess');
+const { adminRouter } = require('./routes/admin');
 
 const app = express();
 
@@ -32,6 +33,7 @@ app.use(securityHeaders);
 
 // Mount API Route Modules
 app.use('/api/auth', authRouter);
+app.use('/api/admin', adminRouter);
 app.use('/api/realtime', realtimeRouter);
 app.use('/api/media', mediaRouter);
 app.use('/api/roommates', roommatesRouter);
