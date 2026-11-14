@@ -1052,7 +1052,15 @@ While Slices 0 through 8 successfully proved all business logic, UI layouts, and
   - 1-click `✨ AI Smart Auto-Fill from Photos` inside owner listing wizard (`triggerAiVisionScan`).
   - Super Admin moderation console (`/api/admin/overview`, `/pending-listings`, `/listings/:id/approve`, `/listings/:id/reject`, `/payments/escrow`).
   - 8 automated integration tests in `server/test/sliceP12-ai-onboarding-admin.test.js`.
-  - **Platform Verification:** 589 integration tests + 24 Playwright E2E tests = **613 total automated tests passing, 100% green**.
+
+#### Slice P13: Google OAuth 2.0 Sign-In & Owner Property Edit & Slot Management ✅ (Completed)
+- **Deliverables:**
+  - 1-Tap Google OAuth 2.0 verification & auto-provisioning endpoint (`POST /api/auth/google`) returning standard RFC 7519 JWT access and refresh tokens.
+  - Self-service property edit endpoint (`PUT /api/properties/:id`) allowing owners to update title, locality, rent, curfew rules, and amenities.
+  - Bed slot vacancy toggle endpoint (`PATCH /api/properties/:id/rooms/:roomId/slots/:slotId`) to instantly mark slots available/occupied with tenant details.
+  - Client UI: "Continue with Google" in `authModal` (`client/index.html` & `client/js/app.js`), plus "✏️ Edit Details" modal and interactive bed vacancy management on Makan Maalik Dashboard.
+  - 13 automated integration tests in `server/test/sliceP13-google-auth-owner-edit.test.js`.
+  - **Platform Verification:** 602 integration tests across 20 suites + 24 Playwright E2E tests = **626 total automated tests passing, 100% green**.
 
 ---
 

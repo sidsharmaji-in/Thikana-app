@@ -80,6 +80,65 @@ router.post('/', (req, res) => {
   res.status(201).json({ success: true, property: newProperty, message: 'Property published successfully!' });
 });
 
+// PUT /api/properties/:id - Owner updates listing details (Slice P13)
+router.put('/:id', (req, res) => {
+  const propertyId = req.params.id;
+  const existing = repository.getPropertyById(propertyId);
+  if (!existing) {
+    return res.status(404).json({ success: false, message: 'Property not found' });
+  }
+
+  const updates = { ...req.body };
+  if (updates.title) updates.title = sanitizeInput(updates.title);
+  if (updates.city) updates.city = sanitizeInput(updates.city);
+  if (updates.locality) updates.locality = sanitizeInput(updates.locality);
+  if (updates.description) updates.description = sanitizeInput(updates.description);
+
+  const updatedProperty = repository.updateProperty(propertyId, updates);
+  res.status(200).json({
+    success: true,
+    property: updatedProperty,
+    message: 'Property details updated successfully!'
+  });
+});
+
+// PATCH /api/properties/:id/rooms/:roomId/slots/:slotId - Owner updates bed slot vacancy (Slice P13)
+router.patch('/:id/rooms/:roomId/slots/:slotId', (req, res) => {
+  const { id, roomId, slotId } = req.params;
+  const { status, tenantName, tenantPhone, roommateProfile } = req.body;
+
+  if (!status || !['available', 'occupied', 'reserved'].includes(status)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid status. Must be "available", "occupied", or "reserved".'
+    });
+  }
+
+  const result = repository.updateSlotStatus(id, roomId, slotId, {
+    status,
+    tenantName: tenantName ? sanitizeInput(tenantName) : undefined,
+    tenantPhone: tenantPhone ? sanitizeInput(tenantPhone) : undefined,
+    roommateProfile
+  });
+
+  if (result.error === 'PROPERTY_NOT_FOUND') {
+    return res.status(404).json({ success: false, message: 'Property not found' });
+  }
+  if (result.error === 'ROOM_NOT_FOUND') {
+    return res.status(404).json({ success: false, message: 'Room not found' });
+  }
+  if (result.error === 'SLOT_NOT_FOUND') {
+    return res.status(404).json({ success: false, message: 'Slot not found' });
+  }
+
+  res.status(200).json({
+    success: true,
+    slot: result.slot,
+    room: result.room,
+    message: `Bed slot status updated to ${status}`
+  });
+});
+
 // PUT /api/properties/:id/toggle-availability - Owner toggles listing on/off
 router.put('/:id/toggle-availability', (req, res) => {
   const property = repository.togglePropertyAvailability(req.params.id);

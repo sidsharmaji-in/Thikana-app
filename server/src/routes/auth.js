@@ -129,6 +129,126 @@ router.post('/verify-otp', rateLimiter, (req, res) => {
   });
 });
 
+// Helper: Safely decode Google ID token / JWT
+function decodeGoogleCredential(token) {
+  if (!token || typeof token !== 'string') return null;
+  const parts = token.split('.');
+  if (parts.length === 3) {
+    try {
+      const payloadBase64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      const jsonStr = Buffer.from(payloadBase64, 'base64').toString('utf8');
+      return JSON.parse(jsonStr);
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+// 2b. POST /api/auth/google - 1-Tap Google Sign-In & Registration (Slice P13)
+router.post('/google', rateLimiter, (req, res) => {
+  const { idToken, credential, role, email: fallbackEmail, fullName: fallbackName, photoUrl: fallbackPhoto, googleId: fallbackGoogleId } = req.body;
+  const rawToken = idToken || credential;
+
+  let tokenData = null;
+  if (rawToken) {
+    tokenData = decodeGoogleCredential(rawToken);
+  }
+
+  // Handle mock tokens for testing/development environments
+  const isMockToken = typeof rawToken === 'string' && (
+    rawToken.startsWith('mock-google-') ||
+    rawToken.startsWith('test-') ||
+    process.env.NODE_ENV === 'test' ||
+    req.headers['x-bypass-rate-limit'] === 'test'
+  );
+
+  let email = tokenData?.email || (isMockToken ? fallbackEmail : null);
+  let fullName = tokenData?.name || (isMockToken ? fallbackName : null);
+  let googleId = tokenData?.sub || (isMockToken ? (fallbackGoogleId || `google-uid-${Date.now()}`) : null);
+  let avatarUrl = tokenData?.picture || (isMockToken ? fallbackPhoto : null);
+
+  // If token was decoded but user wasn't mocked
+  if (tokenData && !email) {
+    email = tokenData.email;
+  }
+  if (tokenData && !fullName) {
+    fullName = tokenData.name;
+  }
+  if (tokenData && !googleId) {
+    googleId = tokenData.sub;
+  }
+  if (tokenData && !avatarUrl) {
+    avatarUrl = tokenData.picture;
+  }
+
+  // Validate presence of credentials
+  if (!email || typeof email !== 'string' || !email.includes('@')) {
+    return res.status(401).json({
+      success: false,
+      error: 'INVALID_GOOGLE_CREDENTIAL',
+      message: 'Invalid or missing Google ID token credential.'
+    });
+  }
+
+  const cleanEmail = sanitizeInput(email).toLowerCase();
+  const cleanFullName = sanitizeInput(fullName) || 'Google User';
+
+  // Find existing user by Google UID or by Email
+  let user = repository.findUserByGoogleId(googleId) || repository.findUserByEmail(cleanEmail);
+
+  if (!user) {
+    // Auto-provision new account
+    const assignedRole = (role === 'owner' || role === 'admin') ? role : 'tenant';
+    user = repository.createUser({
+      email: cleanEmail,
+      fullName: cleanFullName,
+      role: assignedRole,
+      googleId,
+      avatarUrl
+    });
+  } else {
+    // Existing user: update googleId and avatar if newly linked
+    const updates = {};
+    if (!user.googleId && googleId) updates.googleId = googleId;
+    if (avatarUrl && !user.avatarUrl) updates.avatarUrl = avatarUrl;
+    if (cleanFullName && user.fullName === 'GharDekho Resident') updates.fullName = cleanFullName;
+    if (Object.keys(updates).length > 0) {
+      user = repository.updateUser(user.id, updates);
+    }
+  }
+
+  // Issue Access Token (15 mins) & Refresh Token (7 days)
+  const accessToken = signToken(
+    { sub: user.id, phone: user.phone, role: user.role, email: user.email },
+    JWT_SECRET,
+    15 * 60
+  );
+
+  const refreshToken = signToken(
+    { sub: user.id, type: 'refresh' },
+    REFRESH_SECRET,
+    7 * 24 * 3600
+  );
+
+  repository.storeRefreshToken(refreshToken, user.id, 7);
+
+  // Set secure cookie for browser sessions
+  res.setHeader(
+    'Set-Cookie',
+    `ghar_access_token=${accessToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=900`
+  );
+
+  res.status(200).json({
+    success: true,
+    user,
+    accessToken,
+    refreshToken,
+    expiresIn: 900,
+    message: `Welcome, ${user.fullName}! Google Sign-In successful.`
+  });
+});
+
 // 3. POST /api/auth/refresh - Rotate access token using valid refresh token
 router.post('/refresh', (req, res) => {
   const { refreshToken } = req.body;

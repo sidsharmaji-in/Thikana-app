@@ -163,3 +163,4 @@ class VisionExtractorService {
 }
 
 module.exports = new VisionExtractorService();
+

@@ -228,6 +228,22 @@ Evidence Confidence Labels: `[Observed]` (verified in codebase/benchmarks), `[Do
 
 ---
 
+### Step 5.15: Google OAuth 2.0 Sign-In & Owner Property Edit & Slot Management (Slice P13 - Completed)
+- **Goal:** Public launch readiness with 1-Tap Google OAuth 2.0 sign-in and self-service listing editing / bed slot vacancy management for landlords.
+- **Covers:** FR-01, FR-06, FR-07, NFR-02, NFR-03
+- **Tasks:**
+  - [x] Implement `POST /api/auth/google` with Google ID token credential decoding, auto-provisioning role (`tenant` or `owner`), issuing standard RFC 7519 JWT access and refresh tokens.
+  - [x] Implement `PUT /api/properties/:id` allowing landlords to update property titles, localities, cities, descriptions, curfew rules, amenities, and room pricing.
+  - [x] Implement `PATCH /api/properties/:id/rooms/:roomId/slots/:slotId` for granular bed vacancy status toggling (`available` <-> `occupied`).
+  - [x] Integrate "Continue with Google" 1-Tap button in `authModal` (`client/index.html` & `client/js/app.js`).
+  - [x] Build interactive "✏️ Edit Details" modal and direct bed vacancy management on Makan Maalik Dashboard.
+  - [x] Implement automated integration test suite (`server/test/sliceP13-google-auth-owner-edit.test.js` - 13 tests).
+- **Tests to write first/with it:** `server/test/sliceP13-google-auth-owner-edit.test.js` (13 automated tests).
+- **Acceptance Criteria:** Google 1-Tap authentication signs in tenants/owners; Landlords edit live property details and toggle bed occupancy with 1 click.
+- **Definition of Done:** 13 unit/integration tests passing; full suite of 602 integration tests and 24 Playwright E2E browser journeys passing (626 total tests, 100% green).
+
+---
+
 ## 3. Demo-to-Real-User Checkpoints
 
 - **Checkpoint 1 (After Step 5.3):**

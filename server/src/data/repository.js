@@ -434,6 +434,67 @@ const repository = {
     return newProperty;
   },
 
+  updateProperty(id, updates = {}) {
+    const property = properties.find(p => p.id === id);
+    if (!property) return null;
+
+    const allowedFields = [
+      'title', 'description', 'city', 'locality', 'coordinates',
+      'propertyType', 'genderPreference', 'furnishing', 'photos',
+      'nearbyPlaces', 'owner'
+    ];
+
+    allowedFields.forEach(field => {
+      if (updates[field] !== undefined) {
+        property[field] = updates[field];
+      }
+    });
+
+    if (updates.rules && typeof updates.rules === 'object') {
+      property.rules = {
+        ...property.rules,
+        ...updates.rules
+      };
+    }
+
+    if (updates.amenities && typeof updates.amenities === 'object') {
+      property.amenities = {
+        ...property.amenities,
+        ...updates.amenities
+      };
+    }
+
+    if (Array.isArray(updates.rooms)) {
+      property.rooms = updates.rooms.map((r, idx) => {
+        const existingRoom = (property.rooms || []).find(er => er.id === r.id);
+        const maxOcc = r.maxOccupancy || (existingRoom ? existingRoom.maxOccupancy : 1);
+        let slots = r.slots;
+        if (!slots || slots.length === 0) {
+          slots = existingRoom && existingRoom.slots ? existingRoom.slots : Array.from({ length: maxOcc }, (_, sIdx) => ({
+            slotId: `s-${idx + 1}-${sIdx + 1}`,
+            label: `Bed ${String.fromCharCode(65 + sIdx)}`,
+            status: 'available',
+            tenantName: null,
+            tenantPhone: null,
+            since: null,
+            roommateProfile: null
+          }));
+        }
+        return {
+          ...(existingRoom || {}),
+          ...r,
+          id: r.id || (existingRoom ? existingRoom.id : `room-${Date.now()}-${idx + 1}`),
+          maxOccupancy: maxOcc,
+          currentOccupancy: slots.filter(s => s.status === 'occupied').length,
+          slots
+        };
+      });
+    }
+
+    property.updatedAt = new Date().toISOString();
+    return property;
+  },
+
   togglePropertyAvailability(id) {
     const property = properties.find(p => p.id === id);
     if (!property) return null;
@@ -1135,13 +1196,27 @@ const repository = {
     return users.find(u => u.id === id) || null;
   },
 
-  createUser({ phone, fullName, role = 'tenant', city = 'Kota', email = null }) {
+  findUserByEmail(email) {
+    if (!email) return null;
+    const clean = String(email).trim().toLowerCase();
+    return users.find(u => u.email && u.email.toLowerCase() === clean) || null;
+  },
+
+  findUserByGoogleId(googleId) {
+    if (!googleId) return null;
+    return users.find(u => u.googleId === googleId) || null;
+  },
+
+  createUser({ phone = null, fullName, role = 'tenant', city = 'Kota', email = null, googleId = null, avatarUrl = null }) {
     const newUser = {
       id: `user-${Date.now()}`,
       phone,
       fullName: fullName || 'GharDekho Resident',
       role: role || 'tenant',
       email,
+      googleId,
+      avatarUrl,
+      isEmailVerified: !!googleId,
       city,
       isKycVerified: false,
       aadhaarNumber: null,
@@ -1159,6 +1234,10 @@ const repository = {
     if (updates.email !== undefined) user.email = updates.email;
     if (updates.city !== undefined) user.city = updates.city;
     if (updates.role !== undefined) user.role = updates.role;
+    if (updates.phone !== undefined) user.phone = updates.phone;
+    if (updates.googleId !== undefined) user.googleId = updates.googleId;
+    if (updates.avatarUrl !== undefined) user.avatarUrl = updates.avatarUrl;
+    if (updates.isEmailVerified !== undefined) user.isEmailVerified = updates.isEmailVerified;
 
     return user;
   },
