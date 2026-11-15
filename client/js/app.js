@@ -4276,6 +4276,21 @@ const GharDekho = (() => {
         </button>
       `;
     }
+
+    // Sync active state on desktop header navigation shortcuts
+    const deskBtns = {
+      saved: document.getElementById('headerSavedBtn'),
+      messages: document.getElementById('headerChatBtn')
+    };
+    Object.entries(deskBtns).forEach(([tabKey, btn]) => {
+      if (btn) {
+        if (state.activeTab === tabKey) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      }
+    });
   }
 
   function setTab(tab) {
@@ -4857,11 +4872,8 @@ const GharDekho = (() => {
   }
 
   function toggleViewport() {
-    if (!el.shell) el.shell = document.getElementById('deviceShell');
-    el.shell.classList.toggle('mode-wide');
-    const isWide = el.shell.classList.contains('mode-wide');
-    const btn = document.getElementById('viewportToggleBtn') || document.getElementById('viewportBtn');
-    if (btn) btn.textContent = isWide ? '📱 Mobile Frame' : '💻 Wide Dashboard';
+    // Responsive engine automatically adapts layout to device screen width without manual toggling
+    return true;
   }
 
   // --- SLICE P11: BILINGUAL VOICE SEARCH & HINGLISH PARSER ---

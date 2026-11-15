@@ -13,8 +13,8 @@
   <!-- Screen Reader Live Region for TalkBack / VoiceOver (Slice 8) -->
   <div id="a11yAnnouncer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 
-  <!-- Main Responsive Application Container -->
-  <main class="device-shell mode-wide" id="deviceShell">
+  <!-- Main Responsive Application Container (Fluid Auto-Adapting Across All Devices) -->
+  <main class="device-shell" id="deviceShell">
     
     <!-- Offline Stale Data Warning Banner (Slice 8) -->
     <div class="offline-banner" id="offlineBanner" role="status" style="display: none;">
@@ -79,12 +79,12 @@
           </button>
 
           <!-- Saved Shortlist Quick Shortcut (Desktop) -->
-          <button class="header-icon-btn desktop-only" onclick="GharDekho.setTab('saved')" title="Shortlisted Rooms" aria-label="Saved Rooms">
+          <button class="header-icon-btn desktop-only" id="headerSavedBtn" onclick="GharDekho.setTab('saved')" title="Shortlisted Rooms" aria-label="Saved Rooms">
             <span class="header-btn-icon">❤️</span>
           </button>
 
           <!-- In-App Chat Quick Shortcut (Desktop) -->
-          <button class="header-icon-btn desktop-only" onclick="GharDekho.setTab('messages')" title="Messages & Visits" aria-label="In-App Messages">
+          <button class="header-icon-btn desktop-only" id="headerChatBtn" onclick="GharDekho.setTab('messages')" title="Messages & Visits" aria-label="In-App Messages">
             <span class="header-btn-icon">💬</span>
           </button>
 
@@ -101,11 +101,6 @@
           <!-- Authentication Profile / Sign In Pill (Slice P2) -->
           <button class="theme-toggle-btn" id="headerAuthBtn" onclick="GharDekho.openAuthModal()" title="Sign In with Mobile OTP" aria-label="Sign In with Mobile OTP">
             <span id="headerAuthLabel" data-i18n="nav.sign_in">👤 Sign In</span>
-          </button>
-
-          <!-- Viewport Simulator Toggle (Mobile vs Full Screen) -->
-          <button class="viewport-btn" id="viewportBtn" onclick="GharDhundo.toggleViewport()" title="Toggle Viewport Layout" aria-label="Toggle Wide Viewport Simulator">
-            📱 Mobile
           </button>
 
           <!-- Clean Dark/Light Mode Toggle -->
