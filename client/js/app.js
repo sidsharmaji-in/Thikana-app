@@ -356,6 +356,12 @@ const GharDekho = (() => {
     if (navSaved) navSaved.classList.toggle('active', state.currentRole === 'tenant' && state.activeTab === 'saved');
     if (navOwners) navOwners.classList.toggle('active', state.currentRole === 'owner');
 
+    // Update View Toggle (List vs Map) active states
+    const btnList = document.getElementById('viewToggleList');
+    const btnMap = document.getElementById('viewToggleMap');
+    if (btnList) btnList.classList.toggle('active', state.activeTab === 'khojo');
+    if (btnMap) btnMap.classList.toggle('active', state.activeTab === 'map');
+
     if (state.currentRole === 'tenant') {
       if (state.activeTab === 'khojo') renderFeed();
       else if (state.activeTab === 'map') renderMapView();
@@ -489,25 +495,12 @@ const GharDekho = (() => {
     if (savedCountEl) savedCountEl.textContent = state.savedIds.size;
     
     let html = `
-      <div class="view-mode-bar">
-        <div>
-          <span class="results-count"><b>${list.length}</b> verified rooms found</span>
-          <div style="font-size: 11px; color: var(--color-trust); margin-top: 1px;">
-            📍 Distance from ${state.userCoords.label}
-          </div>
-        </div>
-        <div class="view-toggle-btns">
-          <button class="view-toggle-btn active" onclick="GharDekho.setTab('khojo')">List</button>
-          <button class="view-toggle-btn" onclick="GharDekho.setTab('map')">🗺️ Map</button>
-        </div>
-      </div>
-
       ${hasActiveFilters ? `
         <div style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 8px;">
-          <span class="chip" style="font-size: 11px; background: rgba(255, 107, 0, 0.15); border-color: var(--color-primary);" onclick="GharDekho.openFilterSheet()">
+          <span class="chip" style="font-size: 11px; background: rgba(13, 92, 82, 0.1); border-color: var(--thikana-teal); color: var(--thikana-teal); font-weight: 600;" onclick="GharDekho.openFilterSheet()">
             ⚙️ Active Filters (${state.filterAmenities.size + (state.filterGender !== 'any' ? 1 : 0) + (state.filterType !== 'all' ? 1 : 0)})
           </span>
-          <span class="chip" style="font-size: 11px; color: var(--color-danger);" onclick="GharDekho.resetFilters()">
+          <span class="chip" style="font-size: 11px; color: var(--color-danger); cursor: pointer;" onclick="GharDekho.resetFilters()">
             ✕ Clear All
           </span>
         </div>
@@ -4252,6 +4245,12 @@ const GharDekho = (() => {
   function renderNav() {
     const tenantUnread = state.inquiries ? state.inquiries.reduce((acc, i) => acc + (i.unreadCountTenant || 0), 0) : 0;
     const ownerUnread = state.inquiries ? state.inquiries.reduce((acc, i) => acc + (i.unreadCountOwner || 0), 0) : 0;
+
+    // Update View Toggle (List vs Map) active states
+    const btnList = document.getElementById('viewToggleList');
+    const btnMap = document.getElementById('viewToggleMap');
+    if (btnList) btnList.classList.toggle('active', state.activeTab === 'khojo');
+    if (btnMap) btnMap.classList.toggle('active', state.activeTab === 'map');
 
     if (state.currentRole === 'tenant') {
       el.bottomNav.innerHTML = `
