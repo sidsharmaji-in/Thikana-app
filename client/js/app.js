@@ -342,6 +342,20 @@ const GharDekho = (() => {
 
   // Render main content area based on role and tab
   function render() {
+    const heroSection = document.getElementById('heroHomeSection');
+    const isHomeKhojo = (state.currentRole === 'tenant' && state.activeTab === 'khojo');
+    if (heroSection) {
+      heroSection.style.display = isHomeKhojo ? 'block' : 'none';
+    }
+
+    // Update Desktop Nav Links active classes
+    const navKhojo = document.getElementById('navLinkKhojo');
+    const navSaved = document.getElementById('navLinkSaved');
+    const navOwners = document.getElementById('navLinkOwners');
+    if (navKhojo) navKhojo.classList.toggle('active', isHomeKhojo);
+    if (navSaved) navSaved.classList.toggle('active', state.currentRole === 'tenant' && state.activeTab === 'saved');
+    if (navOwners) navOwners.classList.toggle('active', state.currentRole === 'owner');
+
     if (state.currentRole === 'tenant') {
       if (state.activeTab === 'khojo') renderFeed();
       else if (state.activeTab === 'map') renderMapView();
@@ -392,10 +406,16 @@ const GharDekho = (() => {
       list = list.filter(p => p.propertyType === state.filterType);
     }
 
-    // Sharing Occupancy (1, 2, 3, 4)
+    // Sharing Occupancy (1, 2, 3, 4, single, sharing)
     if (state.filterSharing !== 'all') {
       const sNum = parseInt(state.filterSharing, 10);
-      list = list.filter(p => p.rooms && p.rooms.some(r => r.maxOccupancy === sNum));
+      if (!isNaN(sNum)) {
+        list = list.filter(p => p.rooms && p.rooms.some(r => r.maxOccupancy === sNum));
+      } else if (state.filterSharing === 'single') {
+        list = list.filter(p => p.rooms && p.rooms.some(r => r.maxOccupancy === 1));
+      } else if (state.filterSharing === 'sharing') {
+        list = list.filter(p => p.rooms && p.rooms.some(r => r.maxOccupancy > 1));
+      }
     }
 
     // Budget range
@@ -461,6 +481,12 @@ const GharDekho = (() => {
     const hasActiveFilters = state.filterGender !== 'any' || state.filterType !== 'all' || 
                              state.filterSharing !== 'all' || state.filterAmenities.size > 0 || 
                              state.budgetMax < 25000;
+    
+    // Update live counts in upper section header and toolbar
+    const countEl = document.getElementById('sectionStaysCount');
+    if (countEl) countEl.textContent = list.length;
+    const savedCountEl = document.getElementById('secSavedCount');
+    if (savedCountEl) savedCountEl.textContent = state.savedIds.size;
     
     let html = `
       <div class="view-mode-bar">
@@ -4231,26 +4257,26 @@ const GharDekho = (() => {
       el.bottomNav.innerHTML = `
         <button class="nav-item ${state.activeTab === 'khojo' ? 'active' : ''}" onclick="GharDekho.setTab('khojo')">
           <span class="nav-icon">🏠</span>
-          <span>Khojo</span>
+          <span data-i18n="nav.khojo">Khojo</span>
         </button>
         <button class="nav-item ${state.activeTab === 'map' ? 'active' : ''}" onclick="GharDekho.setTab('map')">
           <span class="nav-icon">🗺️</span>
-          <span>Map</span>
+          <span data-i18n="nav.map">Map</span>
         </button>
         <button class="nav-item ${state.activeTab === 'saved' ? 'active' : ''}" onclick="GharDekho.setTab('saved')">
           <span class="nav-icon">❤️</span>
-          <span>Saved</span>
+          <span data-i18n="nav.saved">Saved</span>
         </button>
         <button class="nav-item ${state.activeTab === 'messages' ? 'active' : ''}" onclick="GharDekho.setTab('messages')">
           <span class="nav-icon" style="position: relative;">
             💬
             ${tenantUnread > 0 ? `<span style="position: absolute; top: -4px; right: -8px; background: var(--color-primary); color: #FFF; font-size: 9px; font-weight: 700; border-radius: 10px; padding: 1px 5px; line-height: 1;">${tenantUnread}</span>` : ''}
           </span>
-          <span>Chat</span>
+          <span data-i18n="nav.chat">Chat</span>
         </button>
         <button class="nav-item ${state.activeTab === 'profile' ? 'active' : ''}" onclick="GharDekho.setTab('profile')">
           <span class="nav-icon">👤</span>
-          <span>Profile</span>
+          <span data-i18n="nav.profile">Profile</span>
         </button>
       `;
     } else {
@@ -4301,9 +4327,99 @@ const GharDekho = (() => {
 
   function setCity(city) {
     state.activeCity = city;
-    el.cityPill.textContent = '📍 ' + city;
+    
+    // Update City Pill in Hero Capsule
+    if (el.cityPill) {
+      el.cityPill.innerHTML = `
+        <span class="city-pill-sublabel">CITY</span>
+        <span class="city-pill-val"><span class="pill-text">${city === 'All' ? 'All Cities' : city}</span> 📍</span>
+      `;
+    }
+
+    // Update Quick Chips Active State
+    if (el.chipsContainer) {
+      const chips = el.chipsContainer.querySelectorAll('.chip');
+      chips.forEach(chip => {
+        const onclickAttr = chip.getAttribute('onclick') || '';
+        if ((city === 'All' && onclickAttr.includes("'All'")) || onclickAttr.includes(`'${city}'`)) {
+          chip.classList.add('active');
+        } else {
+          chip.classList.remove('active');
+        }
+      });
+    }
+
+    // Update Hero & Section Eyebrow tags dynamically
+    const heroTag = document.getElementById('heroCityTag');
+    if (heroTag) {
+      heroTag.textContent = city === 'All' ? '✨ A SOFTER LANDING ACROSS INDIA' : `✨ A SOFTER LANDING IN ${city.toUpperCase()}`;
+    }
+    const secEyebrow = document.getElementById('sectionCityEyebrow');
+    if (secEyebrow) {
+      const stateMap = { Kota: 'KOTA · RAJASTHAN', Pune: 'PUNE · MAHARASHTRA', Jaipur: 'JAIPUR · RAJASTHAN', Delhi: 'DELHI · NCR' };
+      secEyebrow.textContent = stateMap[city] || (city === 'All' ? 'POPULAR HUBS · INDIA' : `${city.toUpperCase()} · INDIA`);
+    }
+
     render();
     showToast(`Filtering rooms in ${city}`);
+  }
+
+  function cycleCity() {
+    const hubs = ['All', 'Kota', 'Pune', 'Jaipur', 'Delhi'];
+    const idx = hubs.indexOf(state.activeCity);
+    const next = hubs[(idx + 1) % hubs.length];
+    setCity(next);
+  }
+
+  function triggerSearch() {
+    const q = el.searchInput ? el.searchInput.value.trim() : '';
+    state.searchQuery = q.toLowerCase();
+    renderFeed();
+  }
+
+  function setStayCategory(cat) {
+    state.activeStayCategory = cat;
+    document.querySelectorAll('.stay-type-pill').forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-stay-type') === cat);
+    });
+
+    if (cat === 'all') {
+      state.filterType = 'all';
+      state.filterSharing = 'all';
+    } else if (cat === 'private') {
+      state.filterType = 'all';
+      state.filterSharing = 'single';
+    } else if (cat === 'pg_bed') {
+      state.filterType = 'pg';
+      state.filterSharing = 'sharing';
+    } else if (cat === 'studio') {
+      state.filterType = 'rk';
+      state.filterSharing = 'all';
+    } else if (cat === 'flat') {
+      state.filterType = 'bhk';
+      state.filterSharing = 'all';
+    }
+    renderFeed();
+  }
+
+  function setQuickRent(val) {
+    state.budgetMax = parseInt(val, 10) || 25000;
+    renderFeed();
+  }
+
+  function setQuickGender(val) {
+    state.filterGender = val;
+    renderFeed();
+  }
+
+  function setQuickSort(val) {
+    state.filterSortBy = val;
+    renderFeed();
+  }
+
+  function openListPlace() {
+    switchRole('owner');
+    setTab('owner_add');
   }
 
   function resetFilters() {
@@ -4316,8 +4432,34 @@ const GharDekho = (() => {
     state.budgetMax = 25000;
     state.budgetMin = 1000;
     state.searchQuery = '';
-    el.searchInput.value = '';
-    el.cityPill.textContent = '📍 All Cities';
+    if (el.searchInput) el.searchInput.value = '';
+
+    if (el.cityPill) {
+      el.cityPill.innerHTML = `
+        <span class="city-pill-sublabel">CITY</span>
+        <span class="city-pill-val"><span class="pill-text" data-i18n="nav.all_cities">All Cities</span> 📍</span>
+      `;
+    }
+
+    if (el.chipsContainer) {
+      const chips = el.chipsContainer.querySelectorAll('.chip');
+      chips.forEach((c, idx) => c.classList.toggle('active', idx === 0));
+    }
+
+    document.querySelectorAll('.stay-type-pill').forEach((btn, idx) => btn.classList.toggle('active', idx === 0));
+
+    const rentSel = document.getElementById('quickRentFilter');
+    if (rentSel) rentSel.value = '25000';
+    const genderSel = document.getElementById('quickGenderFilter');
+    if (genderSel) genderSel.value = 'any';
+    const sortSel = document.getElementById('quickSortFilter');
+    if (sortSel) sortSel.value = 'recommended';
+
+    const heroTag = document.getElementById('heroCityTag');
+    if (heroTag) heroTag.textContent = '✨ A SOFTER LANDING IN KOTA';
+    const secEyebrow = document.getElementById('sectionCityEyebrow');
+    if (secEyebrow) secEyebrow.textContent = 'KOTA · RAJASTHAN';
+
     closeFilterSheet();
     render();
     showToast('Filters reset to default');
@@ -5123,6 +5265,13 @@ const GharDekho = (() => {
     closeEditPropertyModal,
     savePropertyEdits,
     verifyKyc,
+    cycleCity,
+    triggerSearch,
+    setStayCategory,
+    setQuickRent,
+    setQuickGender,
+    setQuickSort,
+    openListPlace,
     toggleViewport,
     toggleDarkMode,
     toggleLanguage,

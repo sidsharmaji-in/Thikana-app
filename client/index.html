@@ -13,6 +13,11 @@
   <!-- Screen Reader Live Region for TalkBack / VoiceOver (Slice 8) -->
   <div id="a11yAnnouncer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 
+  <!-- Top Announcement Notice Bar (Slice P14 Editorial Header matching reference) -->
+  <div class="top-announcement-bar" role="note" aria-label="Announcement">
+    <span>✨ Verified Student Housing · Zero Brokerage · Live Water & Power Backup Radar</span>
+  </div>
+
   <!-- Main Responsive Application Container (Fluid Auto-Adapting Across All Devices) -->
   <main class="device-shell" id="deviceShell">
     
@@ -22,7 +27,7 @@
       <span>⚠️ Offline Mode · Loaded from device storage (Showing cached listings)</span>
     </div>
 
-    <!-- Top Navigation Header (Desktop & Mobile Unified) -->
+    <!-- Top Navigation Header (Editorial Navbar from Reference) -->
     <header class="app-header" role="banner">
       <div class="header-inner">
         
@@ -31,23 +36,96 @@
           <div class="brand-logo" aria-hidden="true">🏠</div>
           <div class="brand-text">
             <div class="brand-name" data-i18n="brand.name">Ghar<span>Dekho</span></div>
-            <div class="brand-tagline" data-i18n="brand.tagline">Zero-Brokerage Student Housing</div>
+            <div class="brand-tagline" data-i18n="brand.tagline">ठिकाना · a place to stay</div>
           </div>
         </div>
 
-        <!-- Central Search & Location Bar -->
-        <div class="search-command-bar" role="search">
-          <!-- City Quick Pill -->
-          <button class="location-pill" id="cityPill" onclick="GharDhundo.resetFilters()" title="Change city" aria-label="Selected city: All cities. Click to filter.">
-            <span class="pill-icon">📍</span>
-            <span class="pill-text" data-i18n="nav.all_cities">All Cities</span>
+        <!-- Center Navigation Links (Matching Reference Screenshot) -->
+        <nav class="header-nav-center" aria-label="Primary Navigation">
+          <button class="header-nav-link active" id="navLinkKhojo" onclick="GharDekho.setTab('khojo')">
+            Find a home
           </button>
-          
-          <div class="search-divider"></div>
+          <button class="header-nav-link" id="navLinkSaved" onclick="GharDekho.setTab('saved')">
+            <span class="nav-link-icon">🔖</span> Saved stays
+          </button>
+          <button class="header-nav-link" id="navLinkOwners" onclick="GharDekho.switchRole('owner')">
+            For owners
+          </button>
+        </nav>
 
-          <!-- Keyword Input -->
-          <div class="search-input-box">
-            <span class="search-icon" aria-hidden="true">🔍</span>
+        <!-- Top Right Actions & Controls -->
+        <div class="header-actions">
+          
+          <!-- Bilingual Hindi / English Toggle (Section 14 Plan / Slice P9) -->
+          <button class="theme-toggle-btn lang-pill-btn" id="langToggleBtn" onclick="GharDekho.toggleLanguage()" title="Switch Language (English / हिंदी)" aria-label="Toggle Language">
+            🌐 <span id="langNameLabel">हिंदी</span> ▾
+          </button>
+
+          <!-- Saved Shortlist Quick Shortcut (Desktop) -->
+          <button class="header-icon-btn desktop-only" id="headerSavedBtn" onclick="GharDekho.setTab('saved')" title="Shortlisted Rooms" aria-label="Saved Rooms">
+            <span class="header-btn-icon">❤️</span>
+          </button>
+
+          <!-- In-App Chat Quick Shortcut (Desktop) -->
+          <button class="header-icon-btn desktop-only" id="headerChatBtn" onclick="GharDekho.setTab('messages')" title="Messages & Visits" aria-label="In-App Messages">
+            <span class="header-btn-icon">💬</span>
+          </button>
+
+          <!-- Role Switcher Segmented Control (kept accessible for Journey 2 tests) -->
+          <div class="role-toggle-group" role="group" aria-label="User Profile Role">
+            <button class="role-btn active" id="roleTenantBtn" aria-pressed="true">
+              <span class="role-emoji">🎓</span> <span data-i18n="role.tenant">Kirayedaar</span>
+            </button>
+            <button class="role-btn" id="roleOwnerBtn" aria-pressed="false">
+              <span class="role-emoji">🔑</span> <span data-i18n="role.owner">Owner</span>
+            </button>
+          </div>
+
+          <!-- "+ List your place" Button (Matching Screenshot CTA) -->
+          <button class="btn-list-place" id="btnListPlace" onclick="GharDekho.openListPlace()" title="List your property on GharDekho">
+            + List your place
+          </button>
+
+          <!-- Authentication Profile / Sign In Pill (Slice P2) -->
+          <button class="theme-toggle-btn auth-pill-btn" id="headerAuthBtn" onclick="GharDekho.openAuthModal()" title="Sign In with Mobile OTP" aria-label="Sign In with Mobile OTP">
+            <span id="headerAuthLabel" data-i18n="nav.sign_in">👤 Sign In</span>
+          </button>
+
+          <!-- Clean Dark/Light Mode Toggle -->
+          <button class="theme-toggle-btn" id="themeToggleBtn" onclick="GharDekho.toggleDarkMode()" title="Toggle Dark/Light Mode" aria-label="Toggle Dark/Light Theme">
+            🌓 <span class="theme-name-label" id="themeNameLabel" data-i18n="nav.dark_mode">Dark Mode</span>
+          </button>
+
+          <!-- Notification Bell with Unread Badge -->
+          <button class="notif-bell-btn" id="notifBellBtn" onclick="GharDekho.toggleNotificationDrawer()" title="View Notifications" aria-label="Notifications & Alerts">
+            <span class="bell-icon" aria-hidden="true">🔔</span>
+            <span class="notif-badge" id="notifBadge" style="display: none;" aria-label="Unread notifications count">0</span>
+          </button>
+
+        </div>
+
+      </div>
+    </header>
+
+    <!-- Home Editorial Hero Section (A Softer Landing... matching user reference) -->
+    <section class="hero-home-section" id="heroHomeSection" aria-label="Home Exploration">
+      <div class="hero-top-row">
+        
+        <!-- Left: Editorial Headline Block -->
+        <div class="hero-text-block">
+          <div class="hero-eyebrow-pill" id="heroCityTag">
+            ✨ A SOFTER LANDING IN KOTA
+          </div>
+          <h1 class="hero-title">Find a place to feel at home.</h1>
+          <p class="hero-subtitle">Find a room, a PG bed or a little more space to call home.</p>
+        </div>
+
+        <!-- Right: Floating Search Capsule (Matching Screenshot Split Bar) -->
+        <div class="hero-search-capsule" role="search">
+          
+          <!-- Keyword Input with Search Icon -->
+          <div class="hero-search-input-box">
+            <span class="hero-search-icon" aria-hidden="true">🔍</span>
             <input 
               type="text" 
               id="searchInput" 
@@ -62,62 +140,46 @@
             </button>
           </div>
 
-          <!-- Filter Sheet Button -->
-          <button class="filter-btn-trigger" onclick="GharDekho.openFilterSheet()" title="Open Filters" aria-label="Open Filter Options Sheet">
+          <!-- Divider Line -->
+          <div class="hero-search-divider"></div>
+
+          <!-- City Pill Selection -->
+          <button class="hero-city-pill" id="cityPill" onclick="GharDekho.cycleCity()" title="Change city" aria-label="Selected city: All cities. Click to filter.">
+            <span class="city-pill-sublabel">CITY</span>
+            <span class="city-pill-val"><span class="pill-text" data-i18n="nav.all_cities">All Cities</span> 📍</span>
+          </button>
+
+          <!-- Filter Button with .filter-btn-label (E2E Journey 4 assertion) -->
+          <button class="filter-btn-trigger hero-capsule-filter-btn" onclick="GharDekho.openFilterSheet()" title="Open Filters" aria-label="Open Filter Options Sheet">
             <span class="filter-icon">⚙️</span>
             <span class="filter-btn-label" data-i18n="nav.filters">Filters</span>
           </button>
-        </div>
 
-        <!-- Top Right Actions & Controls -->
-        <div class="header-actions">
-          
-          <!-- Notification Bell with Unread Badge -->
-          <button class="notif-bell-btn" id="notifBellBtn" onclick="GharDekho.toggleNotificationDrawer()" title="View Notifications" aria-label="Notifications & Alerts">
-            <span class="bell-icon" aria-hidden="true">🔔</span>
-            <span class="notif-badge" id="notifBadge" style="display: none;" aria-label="Unread notifications count">0</span>
-          </button>
-
-          <!-- Saved Shortlist Quick Shortcut (Desktop) -->
-          <button class="header-icon-btn desktop-only" id="headerSavedBtn" onclick="GharDekho.setTab('saved')" title="Shortlisted Rooms" aria-label="Saved Rooms">
-            <span class="header-btn-icon">❤️</span>
-          </button>
-
-          <!-- In-App Chat Quick Shortcut (Desktop) -->
-          <button class="header-icon-btn desktop-only" id="headerChatBtn" onclick="GharDekho.setTab('messages')" title="Messages & Visits" aria-label="In-App Messages">
-            <span class="header-btn-icon">💬</span>
-          </button>
-
-          <!-- Role Switcher Segmented Control -->
-          <div class="role-toggle-group" role="group" aria-label="User Profile Role">
-            <button class="role-btn active" id="roleTenantBtn" aria-pressed="true">
-              <span class="role-emoji">🎓</span> <span data-i18n="role.tenant">Kirayedaar</span>
-            </button>
-            <button class="role-btn" id="roleOwnerBtn" aria-pressed="false">
-              <span class="role-emoji">🔑</span> <span data-i18n="role.owner">Owner</span>
-            </button>
-          </div>
-
-          <!-- Authentication Profile / Sign In Pill (Slice P2) -->
-          <button class="theme-toggle-btn" id="headerAuthBtn" onclick="GharDekho.openAuthModal()" title="Sign In with Mobile OTP" aria-label="Sign In with Mobile OTP">
-            <span id="headerAuthLabel" data-i18n="nav.sign_in">👤 Sign In</span>
-          </button>
-
-          <!-- Clean Dark/Light Mode Toggle -->
-          <button class="theme-toggle-btn" id="themeToggleBtn" onclick="GharDekho.toggleDarkMode()" title="Toggle Dark/Light Mode" aria-label="Toggle Dark/Light Theme">
-            🌓 <span class="theme-name-label" id="themeNameLabel" data-i18n="nav.dark_mode">Dark Mode</span>
-          </button>
-
-          <!-- Bilingual Hindi / English Toggle (Section 14 Plan) -->
-          <button class="theme-toggle-btn" id="langToggleBtn" onclick="GharDekho.toggleLanguage()" title="Switch Language (English / हिंदी)" aria-label="Toggle Language">
-            🌐 <span id="langNameLabel">हिंदी</span>
+          <!-- Search Action Submit Button -->
+          <button class="hero-search-submit-btn" onclick="GharDekho.triggerSearch()" aria-label="Search now">
+            🔍
           </button>
 
         </div>
-
       </div>
 
-      <!-- Quick Category & City Navigation Bar -->
+      <!-- Stay Category Pills Row + Zero Brokerage Trust Badge -->
+      <div class="hero-categories-row">
+        <div class="stay-types-group" role="tablist" aria-label="Stay Type Categories">
+          <button class="stay-type-pill active" onclick="GharDekho.setStayCategory('all')" data-stay-type="all">All stays</button>
+          <button class="stay-type-pill" onclick="GharDekho.setStayCategory('private')" data-stay-type="private">Private rooms</button>
+          <button class="stay-type-pill" onclick="GharDekho.setStayCategory('pg_bed')" data-stay-type="pg_bed">PG beds</button>
+          <button class="stay-type-pill" onclick="GharDekho.setStayCategory('studio')" data-stay-type="studio">Studios</button>
+          <button class="stay-type-pill" onclick="GharDekho.setStayCategory('flat')" data-stay-type="flat">Flats</button>
+        </div>
+
+        <div class="hero-trust-badge">
+          <span class="trust-shield">🛡️</span>
+          <span>Zero brokerage for tenants</span>
+        </div>
+      </div>
+
+      <!-- Quick Category & City Navigation Bar (Required by Journey 1 E2E tests) -->
       <nav class="quick-chips-row" id="quickChips" aria-label="Quick Hub Filters">
         <button class="chip active" onclick="GharDekho.setCity('All')" data-i18n="nav.all_hubs">All Hubs</button>
         <button class="chip" onclick="GharDekho.setCity('Kota')" data-i18n="nav.kota_hub">🎯 Kota (NEET/JEE Hub)</button>
@@ -126,7 +188,72 @@
         <button class="chip" onclick="GharDekho.setCity('Delhi')" data-i18n="nav.delhi_hub">🏛️ Delhi (Metro & UPSC)</button>
       </nav>
 
-    </header>
+      <!-- Divider Line matching reference -->
+      <div class="hero-section-divider"></div>
+
+      <!-- Secondary Filter & Sorting Toolbar (Matching reference) -->
+      <div class="secondary-filter-bar">
+        <div class="sec-filter-left">
+          <button class="sec-tool-btn" onclick="GharDekho.openFilterSheet()" title="Detailed Filters">
+            <span class="sec-icon">⚡</span> <span>Make it yours</span>
+          </button>
+
+          <!-- Quick Max Rent Filter Dropdown -->
+          <div class="sec-select-wrap">
+            <select id="quickRentFilter" class="sec-select" onchange="GharDekho.setQuickRent(this.value)" aria-label="Max rent filter">
+              <option value="25000">Max rent: Any budget ⌵</option>
+              <option value="5000">Max rent: Under ₹5,000</option>
+              <option value="8000">Max rent: Under ₹8,000</option>
+              <option value="12000">Max rent: Under ₹12,000</option>
+              <option value="16000">Max rent: Under ₹16,000</option>
+            </select>
+          </div>
+
+          <!-- Quick House Rules / Gender Dropdown -->
+          <div class="sec-select-wrap">
+            <select id="quickGenderFilter" class="sec-select" onchange="GharDekho.setQuickGender(this.value)" aria-label="House rules gender filter">
+              <option value="any">House rules: Any gender ⌵</option>
+              <option value="male">Boys only</option>
+              <option value="female">Girls only</option>
+              <option value="coed">Co-ed friendly</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="sec-filter-right">
+          <button class="sec-tool-btn" id="secSavedBtn" onclick="GharDekho.setTab('saved')" title="Shortlisted rooms">
+            <span>🔖</span> <span>Saved</span> <span class="badge-count" id="secSavedCount">0</span>
+          </button>
+
+          <div class="sec-select-wrap">
+            <select id="quickSortFilter" class="sec-select" onchange="GharDekho.setQuickSort(this.value)" aria-label="Sort listings">
+              <option value="recommended">Recommended ⌵</option>
+              <option value="price_asc">Price: Low to High</option>
+              <option value="price_desc">Price: High to Low</option>
+              <option value="rating">Top Rated</option>
+              <option value="distance">Nearest to Hub</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section Headline (Matching reference) -->
+      <div class="listings-section-header">
+        <div class="sec-header-left">
+          <div class="sec-eyebrow" id="sectionCityEyebrow">KOTA · RAJASTHAN</div>
+          <h2 class="sec-title">A place to settle in</h2>
+          <div class="sec-subtitle" id="sectionStaysSubtitle">
+            <span id="sectionStaysCount">6</span> verified stays · Confirm availability before travelling
+          </div>
+        </div>
+        <div class="sec-header-right">
+          <button class="sec-localities-link" onclick="GharDekho.setTab('map')">
+            <span>🎯 Nearby coaching & hubs</span> <span>↗</span>
+          </button>
+        </div>
+      </div>
+
+    </section>
 
     <!-- Main Dynamic Application Content Container -->
     <section class="app-content" id="appContent" role="region" aria-label="Main Rental Content View">
